@@ -2,7 +2,7 @@
 using ThinkingHome.Migrator.Framework;
 using ThinkingHome.Migrator.Framework.Extensions;
 
-namespace tms.Migrations
+namespace SpecBox.Migrations
 {
     [Migration(1)]
     public class Migration_001_Project : Migration

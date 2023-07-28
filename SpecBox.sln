@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tms.Migrations", "tms.Migrations\tms.Migrations.csproj", "{274A5F0B-3E78-458A-808B-5D7C80342CB9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecBox.Migrations", "SpecBox.Migrations\SpecBox.Migrations.csproj", "{274A5F0B-3E78-458A-808B-5D7C80342CB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tms.Domain", "tms.Domain\tms.Domain.csproj", "{FAC3A0A7-0106-4551-941F-A4522AA4DB4F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecBox.Domain", "SpecBox.Domain\SpecBox.Domain.csproj", "{FAC3A0A7-0106-4551-941F-A4522AA4DB4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tms.WebApi", "tms.WebApi\tms.WebApi.csproj", "{C86AF473-6954-4A25-9EFF-6DBA5AEACBD0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecBox.WebApi", "SpecBox.WebApi\SpecBox.WebApi.csproj", "{C86AF473-6954-4A25-9EFF-6DBA5AEACBD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

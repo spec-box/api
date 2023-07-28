@@ -1,14 +1,20 @@
 using Microsoft.EntityFrameworkCore;
-using tms.Domain;
+using SpecBox.Domain;
 
 const string cstring = "host=localhost;port=5432;database=tms;user name=postgres;password=123";
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<TmsDbContext>(cfg => cfg.UseNpgsql(cstring));
+builder.Services.AddDbContext<SpecBoxDbContext>(cfg => cfg.UseNpgsql(cstring));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opts =>
+{
+    opts.CustomOperationIds(a => a.RelativePath);
+    opts.SupportNonNullableReferenceTypes();
+});
+
+builder.Logging.ClearProviders().AddConsole();
 
 var app = builder.Build();
 
