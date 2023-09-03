@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
+using SpecBox.WebApi.Model;
 
 const string cstring = "host=localhost;port=5432;database=tms;user name=postgres;password=123";
 
@@ -8,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddDbContext<SpecBoxDbContext>(cfg => cfg.UseNpgsql(cstring));
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<ProjectProfile>());
+
 builder.Services.AddSwaggerGen(opts =>
 {
     opts.CustomOperationIds(a => a.RelativePath);

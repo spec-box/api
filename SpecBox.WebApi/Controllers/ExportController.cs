@@ -7,24 +7,16 @@ using Attribute = SpecBox.Domain.Model.Attribute;
 
 namespace SpecBox.WebApi.Controllers;
 
-[ApiController, Route("api")]
-public class MainController : Controller
+[ApiController, Route("api/export")]
+public class ExportController : Controller
 {
     private readonly SpecBoxDbContext db;
     private readonly ILogger logger;
 
-    public MainController(SpecBoxDbContext db, ILogger<MainController> logger)
+    public ExportController(SpecBoxDbContext db, ILogger<ExportController> logger)
     {
         this.db = db;
         this.logger = logger;
-    }
-
-    [HttpGet("projects")]
-    public IActionResult Projects()
-    {
-        var projects = db.Projects.ToArray();
-
-        return Json(projects);
     }
 
     [HttpPost("upload")]

@@ -10,4 +10,6 @@ public class AssertionGroup
 
     public Guid FeatureId { get; set; }
     public Feature Feature { get; set; } = null!;
+    
+    public List<Assertion> Assertions { get; set; } = new();
 }
