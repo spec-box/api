@@ -15,6 +15,7 @@ builder.Services.AddAutoMapper(cfg => cfg.AddProfile<ProjectProfile>());
 builder.Services.AddSwaggerGen(opts =>
 {
     opts.CustomOperationIds(a => a.RelativePath);
+    opts.CustomSchemaIds(a => a.FullName);
     opts.SupportNonNullableReferenceTypes();
 });
 

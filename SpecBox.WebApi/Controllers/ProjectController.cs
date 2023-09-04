@@ -21,6 +21,7 @@ public class ProjectController : Controller
     }
     
     [HttpGet("{project}/features/{feature}")]
+    [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
     public IActionResult Feature(string project, string feature)
     {
         var f = db.Features
