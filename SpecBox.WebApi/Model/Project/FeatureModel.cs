@@ -9,6 +9,6 @@ public class FeatureModel
     [Required] public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
-
-    public List<AssertionGroupModel> AssertionGroups { get; } = new();
+    
+    [Required] public List<AssertionGroupModel> AssertionGroups { get; } = new();
 }
