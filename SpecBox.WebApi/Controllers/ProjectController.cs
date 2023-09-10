@@ -43,9 +43,11 @@ public class ProjectController : Controller
             .Select(f => new TreeNodeModel
             {
                 Id = f.Id.ToString(),
-                Path = new []{ f.Id.ToString() },
+                Path = new[] { f.Id.ToString() },
                 Title = f.Title,
-                CoverageRate = 99,
+                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
+                FeatureCode = f.Code
             })
             .ToArray();
 

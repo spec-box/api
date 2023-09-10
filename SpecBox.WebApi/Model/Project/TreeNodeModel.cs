@@ -9,8 +9,12 @@ public class TreeNodeModel
     [Required] public string[] Path { get; set; } = null!;
 
     public string? ParentId { get; set; } = null!;
+    
+    public string? FeatureCode { get; set; } = null!;
 
     [Required] public string Title { get; set; } = null!;
 
-    [Required] public int CoverageRate { get; set; }
+    [Required] public int TotalCount { get; set; }
+    
+    [Required] public int AutomatedCount { get; set; }
 }
