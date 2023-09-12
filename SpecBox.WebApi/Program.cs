@@ -24,7 +24,6 @@ builder.Logging.ClearProviders().AddConsole();
 var app = builder.Build();
 
 app.UsePathBase(app.Configuration["pathBase"]);
-app.UseHttpsRedirection();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())

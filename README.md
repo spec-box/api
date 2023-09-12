@@ -29,6 +29,22 @@
    ```
 5. Откройте в браузере адрес http://localhost:8080/swagger
 
+## Контейнер
+
+```bash
+# сборка
+docker build -t spec-box-api:0.0.1 -f ./SpecBox.WebApi/Dockerfile .
+
+
+# локальный запуск
+docker run -p 8080:80 -ti \
+ --link postgres:postgres \
+ -e ConnectionStrings__default='host=postgres;port=5432;database=tms;user name=postgres;password=123' \
+ spec-box-api:0.0.1
+
+docker run -p 5000:80 -t spec-box-api:0.0.1
+```
+
 ### Информация
 
 - документация API: https://localhost:7264/swagger
