@@ -6,7 +6,7 @@ using SpecBox.WebApi.Model.Project;
 
 namespace SpecBox.WebApi.Controllers;
 
-[ApiController, Route("api/projects")]
+[ApiController, Route("projects")]
 public class ProjectController : Controller
 {
     private readonly SpecBoxDbContext db;
