@@ -30,6 +30,7 @@ public class ExportController : Controller
         var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
         var assertions = await db.Assertions.Where(a => a.AssertionGroup.Feature.ProjectId == prj.Id).ToListAsync();
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
+        var trees = await db.Trees.Where(t=>t.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
             .Include(v => v.Attribute)
             .Where(a => a.Attribute.ProjectId == prj.Id)
@@ -46,7 +47,7 @@ public class ExportController : Controller
                 value.Title = v.Title;
             }
         }
-        
+
         await db.SaveChangesAsync();
 
         foreach (var f in data.Features)
@@ -104,6 +105,27 @@ public class ExportController : Controller
             }
         }
 
+        if (data.Trees != null)
+        {
+            foreach (var t in data.Trees)
+            {
+                var tree = GetTree(t, trees, prj);
+                if (t.Attributes != null)
+                {
+                    var order = 1;
+                    tree.AttributeGroupOrders.AddRange(t.Attributes.Select(a => new AttributeGroupOrder
+                    {
+                        Attribute = attributes.Single(att => att.Code == a),
+                        Order = order++,
+                        Tree = tree,
+                    }));
+                }
+                db.Trees.Add(tree);
+            }
+        }
+
+        await db.BuildTree(prj.Id);
+
         await db.SaveChangesAsync();
 
         await tran.CommitAsync();
@@ -114,9 +136,9 @@ public class ExportController : Controller
     private Attribute GetAttribute(AttributeModel model, List<Attribute> attributes, Project project)
     {
         logger.LogInformation("process attribute: {Code}", model.Code);
-        
+
         var attribute = attributes.SingleOrDefault(f => f.Code == model.Code);
-        
+
         if (attribute == null)
         {
             logger.LogInformation("attribute doesn't exist, it will be created");
@@ -139,10 +161,10 @@ public class ExportController : Controller
     private AttributeValue GetAttributeValue(string valueCode, List<AttributeValue> values, Attribute attribute)
     {
         logger.LogInformation("process attribute value: {Code}", valueCode);
-        
+
         var value = values.SingleOrDefault(obj =>
             obj.Code == valueCode && obj.Attribute.Code == attribute.Code);
-        
+
         if (value == null)
         {
             value = new AttributeValue
@@ -206,5 +228,25 @@ public class ExportController : Controller
         }
 
         return group;
+    }
+
+    private Tree GetTree(TreeModel model, List<Tree> trees, Project project)
+    {
+        logger.LogInformation("process tree: {Title}", model.Title);
+
+        var tree = trees.SingleOrDefault(t => t.Code == model.Code);
+
+        if (tree == null)
+        {
+            tree = new Tree
+            {
+                Project = project,
+                Code = model.Code,
+                Title = model.Title
+            };
+            db.Trees.Add(tree);
+            trees.Add(tree);
+        }
+        return tree;
     }
 }

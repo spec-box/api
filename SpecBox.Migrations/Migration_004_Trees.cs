@@ -1,6 +1,4 @@
-using System;
 using System.Data;
-using System.IO;
 using System.Reflection;
 using ThinkingHome.Migrator.Framework;
 using ThinkingHome.Migrator.Framework.Extensions;
@@ -49,7 +47,7 @@ public class Migration_004_Trees : Migration
 
         Database.AddForeignKey("FK_TreeNodeFeature_TreeNodeId", "TreeNodeFeature", "TreeNodeId", "TreeNode", "Id", ForeignKeyConstraint.Cascade);
         Database.AddForeignKey("FK_TreeNodeFeature_FeatureId", "TreeNodeFeature", "FeatureId", "Feature", "Id", ForeignKeyConstraint.Cascade);
-        
+
         Database.ExecuteFromResource(Assembly.GetExecutingAssembly(), "SpecBox.Migrations.Resources.BuildTree.sql");
     }
 }
