@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain.Model;
 using Attribute = SpecBox.Domain.Model.Attribute;
+using Microsoft.Data.SqlClient;
 
 namespace SpecBox.Domain;
 
@@ -28,6 +29,12 @@ public class SpecBoxDbContext : DbContext
     public DbSet<Tree> Trees { get; set; } = null!;
 
     public DbSet<AttributeGroupOrder> AttributeGroupOrders { get; set; } = null!;
+
+    public async Task BuildTree(Guid projectId)
+    {
+        var pProjectId = new SqlParameter("@projectId", projectId);
+        await Database.ExecuteSqlRawAsync("CALL BuildTree @projectId", pProjectId);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
