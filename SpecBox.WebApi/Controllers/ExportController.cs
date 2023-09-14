@@ -7,7 +7,7 @@ using Attribute = SpecBox.Domain.Model.Attribute;
 
 namespace SpecBox.WebApi.Controllers;
 
-[ApiController, Route("api/export")]
+[ApiController, Route("export")]
 public class ExportController : Controller
 {
     private readonly SpecBoxDbContext db;
