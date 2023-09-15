@@ -33,7 +33,7 @@ public class SpecBoxDbContext : DbContext
     public async Task BuildTree(Guid projectId)
     {
         var pProjectId = new SqlParameter("@projectId", projectId);
-        await Database.ExecuteSqlRawAsync("CALL BuildTree @projectId", pProjectId);
+        await Database.ExecuteSqlRawAsync("CALL BuildTree(@projectId)", pProjectId);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -47,11 +47,7 @@ public class SpecBoxDbContext : DbContext
             );
 
         modelBuilder.Entity<TreeNode>()
-            .HasMany(e => e.Features)
-            .WithMany(e => e.TreeNodes)
-            .UsingEntity<TreeNodeFeature>(
-                x => x.HasOne<Feature>().WithMany().HasForeignKey(x => x.FeatureId),
-                x => x.HasOne<TreeNode>().WithMany().HasForeignKey(x => x.TreeNodeId)
-            );
+            .HasMany(e => e.Children)
+            .WithOne(e=>e.Parent);
     }
 }

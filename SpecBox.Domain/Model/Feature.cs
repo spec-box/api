@@ -16,6 +16,4 @@ public class Feature
     public List<AttributeValue> Attributes { get; } = new();
 
     public List<AssertionGroup> AssertionGroups { get; } = new();
-    
-    public List<TreeNode> TreeNodes { get; } = new();
 }
