@@ -11,7 +11,7 @@
    ```
 2. Запустите СУБД
    ```shell
-   docker run --name postgres -e POSTGRES_PASSWORD=123 -p 5432:5432 -d postgres
+   docker run --name postgres -e POSTGRES_PASSWORD=123 -e POSTGRES_DB=tms -p 5432:5432 -d postgres
    ```
 3. Обновите структуру БД
    ```shell
