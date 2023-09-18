@@ -11,8 +11,6 @@ public class TreeNode
     public int Amount { get; set; }
     public int AmountAutomated { get; set; }
 
-    public Guid? AttributeValueId { get; set; } = null!;
-    public AttributeValue AttributeValue { get; set; } = null!;
     public Guid? FeatureId { get; set; } = null!;
     public Feature Feature { get; set; } = null!;
 
@@ -21,5 +19,4 @@ public class TreeNode
 
     public Guid? ParentId { get; set; } = null!;
     public TreeNode Parent { get; set; } = null!;
-    public List<TreeNode> Children { get; set; } = null!;
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain.Model;
 using Attribute = SpecBox.Domain.Model.Attribute;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace SpecBox.Domain;
 
@@ -32,8 +32,19 @@ public class SpecBoxDbContext : DbContext
 
     public async Task BuildTree(Guid projectId)
     {
-        var pProjectId = new SqlParameter("@projectId", projectId);
-        await Database.ExecuteSqlRawAsync("CALL BuildTree(@projectId)", pProjectId);
+        var connection = Database.GetDbConnection();
+        if (connection is NpgsqlConnection)
+        {
+            using var cmd = new NpgsqlCommand("CALL BuildTree($1)", (NpgsqlConnection)connection)
+            {
+                Parameters =
+                {
+                    new() { Value = projectId },
+                }
+            };
+
+            await cmd.ExecuteNonQueryAsync();
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -48,6 +59,6 @@ public class SpecBoxDbContext : DbContext
 
         modelBuilder.Entity<TreeNode>()
             .HasMany(e => e.Children)
-            .WithOne(e=>e.Parent);
+            .WithOne(e => e.Parent);
     }
 }

@@ -35,13 +35,11 @@ public class Migration_004_Trees : Migration
             new Column("Title", DbType.String.WithSize(400), ColumnProperty.NotNull),
             new Column("Amount", DbType.Int32, ColumnProperty.NotNull),
             new Column("AmountAutomated", DbType.Int32, ColumnProperty.NotNull),
-            new Column("AttributeValueId", DbType.Guid),
             new Column("FeatureId", DbType.Guid),
             new Column("TreeId", DbType.Guid, ColumnProperty.NotNull),
             new Column("ParentId", DbType.Guid)
         );
         Database.AddForeignKey("FK_TreeNode_TreeId", "TreeNode", "TreeId", "Tree", "Id", ForeignKeyConstraint.Cascade);
-        Database.AddForeignKey("FK_TreeNode_AttributeValueId", "TreeNode", "AttributeValueId", "AttributeValue", "Id");
         Database.AddForeignKey("FK_TreeNode_FeatureId", "TreeNode", "FeatureId", "Feature", "Id");
         Database.AddForeignKey("FK_TreeNode_ParentId", "TreeNode", "ParentId", "TreeNode", "Id");
 

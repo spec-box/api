@@ -160,11 +160,10 @@ DELETE FROM "TreeNodeFeature" WHERE "FeatureId" in (SELECT "Id" FROM "Feature" a
 DELETE FROM "TreeNode" WHERE "TreeId" in (SELECT "Id" FROM "Tree" as tree WHERE tree."ProjectId" = "v_ProjectId");
 
 -- Data to insert to TreeNode, тут выбираем уникальные пары и вставляем, соблюдаем порядок от корня к листьям
-INSERT INTO public."TreeNode" ("Id", "ParentId", "AttributeValueId", "TreeId", "Title", "Amount", "AmountAutomated")
+INSERT INTO public."TreeNode" ("Id", "ParentId", "TreeId", "Title", "Amount", "AmountAutomated")
 SELECT DISTINCT
 	tids."Id" as "Id",
 	tids."ParentId" as "ParentId",
-	tids."AttributeValueId" as "AttributeValueId",
 	tids."TreeId" as "TreeId",
 	aval."Title" as "Title",
 	tids."Amount" as "Amount",
@@ -172,7 +171,7 @@ SELECT DISTINCT
 FROM temp_tree_ids as tids
 	JOIN "AttributeValue" as aval on tids."AttributeValueId" = aval."Id";
 
--- Data to insert to TreeNodeFeature, находим самые глубокие узлы связанные с фичами и вставляем
+-- Data to insert to TreeNode, находим самые глубокие узлы связанные с фичами и вставляем
 INSERT INTO public."TreeNode" ("ParentId", "FeatureId", "TreeId", "Title", "Amount", "AmountAutomated")
 SELECT DISTINCT ON (ptf."TreeId", ptf."FeatureId") 
 	tids."Id" as "ParentId",
