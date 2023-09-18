@@ -6,8 +6,8 @@ namespace SpecBox.Domain.Model;
 public class Tree
 {
     public Guid Id { get; set; }
-    public string? Code { get; set; }
-    public string? Title { get; set; }
+    public string Code { get; set; } = null!;
+    public string Title { get; set; } = null!;
 
     public Guid ProjectId { get; set; }
     public Project Project { get; set; } = null!;

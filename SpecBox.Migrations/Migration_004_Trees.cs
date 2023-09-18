@@ -32,21 +32,16 @@ public class Migration_004_Trees : Migration
 
         Database.AddTable("TreeNode",
             new Column("Id", DbType.Guid, ColumnProperty.PrimaryKey, "gen_random_uuid()"),
-            new Column("AttributeValueId", DbType.Guid, ColumnProperty.NotNull),
+            new Column("Title", DbType.String.WithSize(400), ColumnProperty.NotNull),
+            new Column("Amount", DbType.Int32, ColumnProperty.NotNull),
+            new Column("AmountAutomated", DbType.Int32, ColumnProperty.NotNull),
+            new Column("FeatureId", DbType.Guid),
             new Column("TreeId", DbType.Guid, ColumnProperty.NotNull),
             new Column("ParentId", DbType.Guid)
         );
         Database.AddForeignKey("FK_TreeNode_TreeId", "TreeNode", "TreeId", "Tree", "Id", ForeignKeyConstraint.Cascade);
-        Database.AddForeignKey("FK_TreeNode_AttributeValueId", "TreeNode", "AttributeValueId", "AttributeValue", "Id");
+        Database.AddForeignKey("FK_TreeNode_FeatureId", "TreeNode", "FeatureId", "Feature", "Id");
         Database.AddForeignKey("FK_TreeNode_ParentId", "TreeNode", "ParentId", "TreeNode", "Id");
-
-        Database.AddTable("TreeNodeFeature",
-            new Column("TreeNodeId", DbType.Guid, ColumnProperty.PrimaryKey),
-            new Column("FeatureId", DbType.Guid, ColumnProperty.PrimaryKey)
-        );
-
-        Database.AddForeignKey("FK_TreeNodeFeature_TreeNodeId", "TreeNodeFeature", "TreeNodeId", "TreeNode", "Id", ForeignKeyConstraint.Cascade);
-        Database.AddForeignKey("FK_TreeNodeFeature_FeatureId", "TreeNodeFeature", "FeatureId", "Feature", "Id", ForeignKeyConstraint.Cascade);
 
         Database.ExecuteFromResource(Assembly.GetExecutingAssembly(), "SpecBox.Migrations.Resources.BuildTree.sql");
     }

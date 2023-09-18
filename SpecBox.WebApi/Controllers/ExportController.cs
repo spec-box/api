@@ -7,7 +7,7 @@ using Attribute = SpecBox.Domain.Model.Attribute;
 
 namespace SpecBox.WebApi.Controllers;
 
-[ApiController, Route("api/export")]
+[ApiController, Route("export")]
 public class ExportController : Controller
 {
     private readonly SpecBoxDbContext db;
@@ -113,6 +113,7 @@ public class ExportController : Controller
                 if (t.Attributes != null)
                 {
                     var order = 1;
+                    tree.AttributeGroupOrders.Clear();
                     tree.AttributeGroupOrders.AddRange(t.Attributes.Select(a => new AttributeGroupOrder
                     {
                         Attribute = attributes.Single(att => att.Code == a),
