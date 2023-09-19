@@ -9,6 +9,8 @@ public class Feature
     public string Code { get; set; } = null!;
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
+    
+    public string? FilePath { get; set; }
 
     public Guid ProjectId { get; set; }
     public Project Project { get; set; } = null!;

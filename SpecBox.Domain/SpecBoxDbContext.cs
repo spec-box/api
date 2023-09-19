@@ -30,17 +30,19 @@ public class SpecBoxDbContext : DbContext
 
     public DbSet<AttributeGroupOrder> AttributeGroupOrders { get; set; } = null!;
 
+    public DbSet<AutotestsStatRecord> AutotestsStat { get; set; } = null!;
+    
+    public DbSet<AssertionsStatRecord> AssertionsStat { get; set; } = null!;
+
     public async Task BuildTree(Guid projectId)
     {
         var connection = Database.GetDbConnection();
-        if (connection is NpgsqlConnection)
+        
+        if (connection is NpgsqlConnection npgsqlConnection)
         {
-            using var cmd = new NpgsqlCommand("CALL BuildTree($1)", (NpgsqlConnection)connection)
+            await using var cmd = new NpgsqlCommand("CALL BuildTree($1)", npgsqlConnection)
             {
-                Parameters =
-                {
-                    new() { Value = projectId },
-                }
+                Parameters = { new { Value = projectId } }
             };
 
             await cmd.ExecuteNonQueryAsync();
@@ -56,9 +58,5 @@ public class SpecBoxDbContext : DbContext
                 x => x.HasOne<AttributeValue>().WithMany().HasForeignKey(x => x.AttributeValueId),
                 x => x.HasOne<Feature>().WithMany().HasForeignKey(x => x.FeatureId)
             );
-
-        modelBuilder.Entity<TreeNode>()
-            .HasMany(e => e.Children)
-            .WithOne(e => e.Parent);
     }
 }
