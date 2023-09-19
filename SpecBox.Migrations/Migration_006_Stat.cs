@@ -16,8 +16,7 @@ public class Migration_006_Stat : Migration
             new Column("ProjectId", DbType.Guid, ColumnProperty.NotNull),
             new Column("Timestamp", DbType.DateTime, ColumnProperty.NotNull),
             new Column("Duration", DbType.Int32, ColumnProperty.NotNull),
-            new Column("AssertionsCount", DbType.Int32, ColumnProperty.NotNull),
-            new Column("Comment", DbType.String.WithSize(1000), ColumnProperty.Null)
+            new Column("AssertionsCount", DbType.Int32, ColumnProperty.NotNull)
         );
 
         Database.AddForeignKey("FK_AutotestsStat_ProjectId", "AutotestsStat", "ProjectId", "Project", "Id");
@@ -27,8 +26,7 @@ public class Migration_006_Stat : Migration
             new Column("ProjectId", DbType.Guid, ColumnProperty.NotNull),
             new Column("Timestamp", DbType.DateTime, ColumnProperty.NotNull),
             new Column("TotalCount", DbType.Int32, ColumnProperty.NotNull),
-            new Column("AutomatedCount", DbType.Int32, ColumnProperty.NotNull),
-            new Column("Comment", DbType.String.WithSize(1000), ColumnProperty.Null)
+            new Column("AutomatedCount", DbType.Int32, ColumnProperty.NotNull)
         );
         
         Database.AddForeignKey("FK_AssertionsStat_ProjectId", "AssertionsStat", "ProjectId", "Project", "Id");

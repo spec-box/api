@@ -16,6 +16,4 @@ public class AutotestsStatRecord
     public int Duration { get; set; }
     
     public int AssertionsCount { get; set; }
-    
-    public string? Comment { get; set; }
 }

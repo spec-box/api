@@ -16,6 +16,4 @@ public class AssertionsStatRecord
     public int TotalCount { get; set; }
     
     public int AutomatedCount { get; set; }
-
-    public string? Comment { get; set; }
 }

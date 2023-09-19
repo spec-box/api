@@ -54,6 +54,7 @@ public class ExportController : Controller
             var feature = GetFeature(f, features, prj);
             feature.Title = f.Title;
             feature.Description = f.Description;
+            feature.FilePath = f.FilePath;
 
             if (f.Attributes != null)
             {
@@ -103,6 +104,24 @@ public class ExportController : Controller
                 }
             }
         }
+        
+        // stat
+        var allAssertions = data.Features
+            .SelectMany(f => f.Groups)
+            .SelectMany(gr => gr.Assertions)
+            .ToArray();
+        
+        var statRecord = new AssertionsStatRecord
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = prj.Id,
+            Project = prj,
+            Timestamp = DateTime.UtcNow,
+            TotalCount = allAssertions.Length,
+            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
+        };
+
+        db.AssertionsStat.Add(statRecord);
 
         await db.SaveChangesAsync();
 
