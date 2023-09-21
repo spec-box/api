@@ -12,5 +12,5 @@ public class Tree
     public Guid ProjectId { get; set; }
     public Project Project { get; set; } = null!;
 
-    public List<AttributeGroupOrder> AttributeGroupOrders { get; set; } = null!;
+    public List<AttributeGroupOrder> AttributeGroupOrders { get; set; } = new();
 }
