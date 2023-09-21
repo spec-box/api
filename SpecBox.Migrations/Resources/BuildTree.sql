@@ -156,7 +156,6 @@ FROM tree_ids as tids
 	JOIN temp_path_to_feature ptf on tids."Key" = ptf."Key"
 GROUP BY tids."Id", tids."ParentId", tids."TreeId", tids."AttributeValueId", tids."Key";
 
-DELETE FROM "TreeNodeFeature" WHERE "FeatureId" in (SELECT "Id" FROM "Feature" as ft WHERE ft."ProjectId" = "v_ProjectId");
 DELETE FROM "TreeNode" WHERE "TreeId" in (SELECT "Id" FROM "Tree" as tree WHERE tree."ProjectId" = "v_ProjectId");
 
 -- Data to insert to TreeNode, тут выбираем уникальные пары и вставляем, соблюдаем порядок от корня к листьям

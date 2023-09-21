@@ -40,9 +40,9 @@ public class SpecBoxDbContext : DbContext
         
         if (connection is NpgsqlConnection npgsqlConnection)
         {
-            await using var cmd = new NpgsqlCommand("CALL BuildTree($1)", npgsqlConnection)
+            await using var cmd = new NpgsqlCommand("CALL \"BuildTree\"($1)", npgsqlConnection)
             {
-                Parameters = { new { Value = projectId } }
+                Parameters = { new NpgsqlParameter { Value = projectId } }
             };
 
             await cmd.ExecuteNonQueryAsync();
