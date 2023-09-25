@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NpgsqlTypes;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Upload;
@@ -23,9 +24,13 @@ public class ExportController : Controller
     public async Task<IActionResult> Upload([FromQuery(Name = "project")] string projectCode,
         [FromBody] UploadData data)
     {
-        await using var tran = await db.Database.BeginTransactionAsync();
-
+        // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
+
+        // экспериментальный экспорт на стороне БД
+        await RunExport(prj, data);
+
+        // загружаем все данные для обработки в памяти
         var trees = await db.Trees.Include(t => t.AttributeGroupOrders).Where(t => t.ProjectId == prj.Id).ToListAsync();
         var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
         var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
@@ -133,7 +138,7 @@ public class ExportController : Controller
         }
 
         await db.SaveChangesAsync();
-        
+
         await db.BuildTree(prj.Id);
 
         // stat
@@ -155,8 +160,6 @@ public class ExportController : Controller
         db.AssertionsStat.Add(statRecord);
 
         await db.SaveChangesAsync();
-
-        await tran.CommitAsync();
 
         return Ok();
     }
@@ -277,5 +280,33 @@ public class ExportController : Controller
         }
 
         return tree;
+    }
+
+    private async Task RunExport(Project project, UploadData data)
+    {
+        var export = new Export { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow };
+
+        db.Exports.Add(export);
+        await db.SaveChangesAsync();
+
+        await using var conn = db.GetConnection();
+
+        await conn.OpenAsync();
+
+        await using var writer = await conn.BeginBinaryImportAsync(
+            "COPY \"ExportFeature\" (\"ExportId\", \"Code\",\"Title\",\"Description\", \"FilePath\") FROM STDIN (FORMAT BINARY)"
+        );
+
+        foreach (var feature in data.Features)
+        {
+            await writer.StartRowAsync();
+            await writer.WriteAsync(export.Id, NpgsqlDbType.Uuid);
+            await writer.WriteAsync(feature.Code, NpgsqlDbType.Text);
+            await writer.WriteAsync(feature.Title, NpgsqlDbType.Text);
+            await writer.WriteAsync(feature.Description, NpgsqlDbType.Text);
+            await writer.WriteAsync(feature.FilePath, NpgsqlDbType.Text);
+        }
+
+        await writer.CompleteAsync();
     }
 }

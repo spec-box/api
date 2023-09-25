@@ -11,6 +11,6 @@ public class Migration_005_FeatureFilePath : Migration
     public override void Apply()
     {
         Database.AddColumn("Feature",
-            new Column("FilePath", DbType.String.WithSize(Int32.MaxValue), ColumnProperty.Null));
+            new Column("FilePath", DbType.String.WithSize(int.MaxValue), ColumnProperty.Null));
     }
 }

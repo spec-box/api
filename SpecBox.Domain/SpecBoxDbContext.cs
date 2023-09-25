@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain.Model;
 using Attribute = SpecBox.Domain.Model.Attribute;
 using Npgsql;
@@ -33,6 +34,8 @@ public class SpecBoxDbContext : DbContext
     public DbSet<AutotestsStatRecord> AutotestsStat { get; set; } = null!;
     
     public DbSet<AssertionsStatRecord> AssertionsStat { get; set; } = null!;
+    
+    public DbSet<Export> Exports { get; set; } = null!;
 
     public async Task BuildTree(Guid projectId)
     {
@@ -49,6 +52,15 @@ public class SpecBoxDbContext : DbContext
         }
     }
 
+
+    public NpgsqlConnection GetConnection()
+    {
+        var connection = Database.GetDbConnection() as NpgsqlConnection;
+
+        Debug.Assert(connection != null, nameof(connection) + " != null");
+        return connection;
+    }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Feature>()
