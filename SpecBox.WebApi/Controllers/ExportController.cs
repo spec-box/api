@@ -113,18 +113,27 @@ public class ExportController : Controller
             tree.Title = t.Title;
 
             var order = 1;
-            tree.AttributeGroupOrders.Clear();
-            tree.AttributeGroupOrders.AddRange(t.Attributes.Select(a => new AttributeGroupOrder
-            {
-                Attribute = attributes.Single(att => att.Code == a),
-                Order = order++,
-                Tree = tree,
-            }));
+            db.AttributeGroupOrders.RemoveRange(tree.AttributeGroupOrders);
 
-            db.Trees.Add(tree);
+            foreach (var attributeCode in t.Attributes)
+            {
+                var attribute = attributes.Single(att => att.Code == attributeCode);
+
+                var obj = new AttributeGroupOrder
+                {
+                    Id = Guid.NewGuid(),
+                    Attribute = attribute,
+                    Order = order++,
+                    Tree = tree,
+                };
+
+                db.AttributeGroupOrders.Add(obj);
+                tree.AttributeGroupOrders.Add(obj);
+            }
         }
 
         await db.SaveChangesAsync();
+        
         await db.BuildTree(prj.Id);
 
         // stat
@@ -259,6 +268,7 @@ public class ExportController : Controller
         {
             tree = new Tree
             {
+                Id = Guid.NewGuid(),
                 Project = project,
                 Code = model.Code
             };
