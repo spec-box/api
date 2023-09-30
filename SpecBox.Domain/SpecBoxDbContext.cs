@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain.Model;
 using Attribute = SpecBox.Domain.Model.Attribute;
 using Npgsql;
-using SpecBox.Domain.BulkCopy;
 
 namespace SpecBox.Domain;
 
@@ -38,19 +37,10 @@ public class SpecBoxDbContext : DbContext
     public DbSet<AssertionsStatRecord> AssertionsStat { get; set; } = null!;
 
     public DbSet<Export> Exports { get; set; } = null!;
-
-    // bulk copy
-    public async Task<BulkWriterFeature> CreateFeatureWriter()
-    {
-        var connection = await GetConnection();
-
-        return new BulkWriterFeature(connection);
-    }
-
     public async Task BuildTree(Guid projectId) => await ExecuteSQL("CALL \"BuildTree\"($1)", projectId);
     public async Task MergeExportedData(Guid exportId) => await ExecuteSQL("CALL \"MergeExportedData\"($1)", exportId);
 
-    private async Task<NpgsqlConnection> GetConnection()
+    public async Task<NpgsqlConnection> GetConnection()
     {
         var connection = Database.GetDbConnection() as NpgsqlConnection;
 

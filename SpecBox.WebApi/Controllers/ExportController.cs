@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
+using SpecBox.Domain.BulkCopy;
 using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Upload;
 using Attribute = SpecBox.Domain.Model.Attribute;
@@ -253,8 +254,11 @@ public class ExportController : Controller
         await db.SaveChangesAsync();
 
         // сохраняем данные в таблицу
-        await using (var featureWriter = await db.CreateFeatureWriter())
+        var connection = await db.GetConnection();
+
+        await using (var featureWriter = connection.CreateFeatureWriter())
         {
+            // экспорт фичей
             foreach (var feature in data.Features)
             {
                 await featureWriter.AddFeature(export.Id, feature.Code, feature.Title, feature.Description,
@@ -262,6 +266,25 @@ public class ExportController : Controller
             }
 
             await featureWriter.CompleteAsync();
+        }
+
+        // экспорт утверждений
+        await using (var assertionWriter = connection.CreateAssertionWriter())
+        {
+            foreach (var feature in data.Features)
+            {
+                foreach (var group in feature.Groups)
+                {
+                    foreach (var assertion in group.Assertions)
+                    {
+                        await assertionWriter.AddAssertion(export.Id, feature.Code, group.Title,
+                            assertion.Title,
+                            assertion.Description, assertion.IsAutomated);
+                    }
+                }
+            }
+
+            await assertionWriter.CompleteAsync();
         }
         
         // запускаем обработку данных

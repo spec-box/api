@@ -11,11 +11,12 @@ public abstract class BulkWriter: IDisposable, IAsyncDisposable
         Writer = connection.BeginBinaryImport(copyFromCommand);
     }
 
-    public async Task<ulong> CompleteAsync()
+    public async Task CompleteAsync()
     {
-        return await Writer.CompleteAsync();
+        await Writer.CompleteAsync();
+        await Writer.CloseAsync();
     }
-
+    
     public void Dispose() => Writer.Dispose();
     public ValueTask DisposeAsync() => Writer.DisposeAsync();
 }

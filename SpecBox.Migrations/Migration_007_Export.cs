@@ -25,7 +25,24 @@ public class Migration_007_Export : Migration
 
         Database.AddPrimaryKey("PK_ExportFeature", "ExportFeature", "ExportId", "Code");
         Database.AddForeignKey("FK_ExportFeature_ExportId", "ExportFeature", "ExportId", "Export", "Id");
-        
+
+        Database.AddTable("ExportAssertion",
+            new Column("ExportId", DbType.Guid, ColumnProperty.NotNull),
+            new Column("FeatureCode", DbType.String.WithSize(255), ColumnProperty.NotNull),
+            new Column("GroupTitle", DbType.String.WithSize(400), ColumnProperty.NotNull),
+            new Column("Title", DbType.String.WithSize(400), ColumnProperty.NotNull),
+            new Column("Description", DbType.String.WithSize(int.MaxValue), ColumnProperty.Null),
+            new Column("IsAutomated", DbType.Boolean, ColumnProperty.NotNull, false)
+        );
+
+        Database.AddPrimaryKey(
+            "PK_ExportAssertion",
+            "ExportAssertion",
+            "ExportId", "FeatureCode", "GroupTitle", "Title"
+        );
+
+        Database.AddForeignKey("FK_ExportAssertion_ExportId", "ExportAssertion", "ExportId", "Export", "Id");
+
         Database.ExecuteFromResource(GetType().Assembly, "SpecBox.Migrations.Resources.MergeExportedData.sql");
     }
 }
