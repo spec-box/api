@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NpgsqlTypes;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Upload;
@@ -24,6 +23,8 @@ public class ExportController : Controller
     public async Task<IActionResult> Upload([FromQuery(Name = "project")] string projectCode,
         [FromBody] UploadData data)
     {
+        await using var tran = await db.Database.BeginTransactionAsync();
+
         // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
 
@@ -32,9 +33,6 @@ public class ExportController : Controller
 
         // загружаем все данные для обработки в памяти
         var trees = await db.Trees.Include(t => t.AttributeGroupOrders).Where(t => t.ProjectId == prj.Id).ToListAsync();
-        var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
-        var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
-        var assertions = await db.Assertions.Where(a => a.AssertionGroup.Feature.ProjectId == prj.Id).ToListAsync();
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
             .Include(v => v.Attribute)
@@ -55,12 +53,15 @@ public class ExportController : Controller
 
         await db.SaveChangesAsync();
 
+        var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
+        var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
+        var assertions = await db.Assertions.Where(a => a.AssertionGroup.Feature.ProjectId == prj.Id).ToListAsync();
+
         foreach (var f in data.Features)
         {
-            var feature = GetFeature(f, features, prj);
-            feature.Title = f.Title;
-            feature.Description = f.Description;
-            feature.FilePath = f.FilePath;
+            logger.LogInformation("process feature: {Code}", f.Code);
+
+            var feature = features.Single(ft => ft.Code == f.Code);
 
             if (f.Attributes != null)
             {
@@ -139,27 +140,13 @@ public class ExportController : Controller
 
         await db.SaveChangesAsync();
 
+        // формируем деревья
         await db.BuildTree(prj.Id);
 
-        // stat
-        var allAssertions = data.Features
-            .SelectMany(f => f.Groups)
-            .SelectMany(gr => gr.Assertions)
-            .ToArray();
+        // сохраняем статистику
+        await WriteStat(prj.Id, data);
 
-        var statRecord = new AssertionsStatRecord
-        {
-            Id = Guid.NewGuid(),
-            ProjectId = prj.Id,
-            Project = prj,
-            Timestamp = DateTime.UtcNow,
-            TotalCount = allAssertions.Length,
-            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
-        };
-
-        db.AssertionsStat.Add(statRecord);
-
-        await db.SaveChangesAsync();
+        await tran.CommitAsync();
 
         return Ok();
     }
@@ -214,31 +201,6 @@ public class ExportController : Controller
         return value;
     }
 
-    private Feature GetFeature(FeatureModel model, List<Feature> features, Project project)
-    {
-        logger.LogInformation("process feature: {Code}", model.Code);
-
-        var feature = features.SingleOrDefault(f => f.Code == model.Code);
-
-        if (feature == null)
-        {
-            logger.LogInformation("feature doesn't exist, it will be created");
-
-            feature = new Feature
-            {
-                Id = Guid.NewGuid(),
-                ProjectId = project.Id,
-                Project = project,
-                Code = model.Code,
-            };
-
-            db.Features.Add(feature);
-            features.Add(feature);
-        }
-
-        return feature;
-    }
-
     private AssertionGroup GetGroup(AssertionGroupModel model, List<AssertionGroup> groups, Feature feature)
     {
         logger.LogInformation("process assertion group: {Title}", model.Title);
@@ -284,29 +246,47 @@ public class ExportController : Controller
 
     private async Task RunExport(Project project, UploadData data)
     {
+        // добавляем новый экспорт
         var export = new Export { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow };
 
         db.Exports.Add(export);
         await db.SaveChangesAsync();
 
-        await using var conn = db.GetConnection();
-
-        await conn.OpenAsync();
-
-        await using var writer = await conn.BeginBinaryImportAsync(
-            "COPY \"ExportFeature\" (\"ExportId\", \"Code\",\"Title\",\"Description\", \"FilePath\") FROM STDIN (FORMAT BINARY)"
-        );
-
-        foreach (var feature in data.Features)
+        // сохраняем данные в таблицу
+        await using (var featureWriter = await db.CreateFeatureWriter())
         {
-            await writer.StartRowAsync();
-            await writer.WriteAsync(export.Id, NpgsqlDbType.Uuid);
-            await writer.WriteAsync(feature.Code, NpgsqlDbType.Text);
-            await writer.WriteAsync(feature.Title, NpgsqlDbType.Text);
-            await writer.WriteAsync(feature.Description, NpgsqlDbType.Text);
-            await writer.WriteAsync(feature.FilePath, NpgsqlDbType.Text);
-        }
+            foreach (var feature in data.Features)
+            {
+                await featureWriter.AddFeature(export.Id, feature.Code, feature.Title, feature.Description,
+                    feature.FilePath);
+            }
 
-        await writer.CompleteAsync();
+            await featureWriter.CompleteAsync();
+        }
+        
+        // запускаем обработку данных
+        await db.MergeExportedData(export.Id);
+    }
+
+    private async Task WriteStat(Guid projectId, UploadData data)
+    {
+        // stat
+        var allAssertions = data.Features
+            .SelectMany(f => f.Groups)
+            .SelectMany(gr => gr.Assertions)
+            .ToArray();
+
+        var statRecord = new AssertionsStatRecord
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            Timestamp = DateTime.UtcNow,
+            TotalCount = allAssertions.Length,
+            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
+        };
+
+        db.AssertionsStat.Add(statRecord);
+
+        await db.SaveChangesAsync();
     }
 }
