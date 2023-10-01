@@ -13,4 +13,9 @@ public static class BulkWriterExtensions
     {
         return new BulkWriterAssertion(connection);
     }
+
+    public static BulkWriterFeatureAttribute CreateFeatureAttributeWriter(this NpgsqlConnection connection)
+    {
+        return new BulkWriterFeatureAttribute(connection);
+    }
 }

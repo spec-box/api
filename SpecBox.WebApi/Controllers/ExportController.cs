@@ -28,12 +28,8 @@ public class ExportController : Controller
 
         // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
-
-        // экспериментальный экспорт на стороне БД
-        await RunExport(prj, data);
-
-        // загружаем все данные для обработки в памяти
-        var trees = await db.Trees.Include(t => t.AttributeGroupOrders).Where(t => t.ProjectId == prj.Id).ToListAsync();
+        
+        // экспорт атрибутов и значений
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
             .Include(v => v.Attribute)
@@ -54,6 +50,10 @@ public class ExportController : Controller
 
         await db.SaveChangesAsync();
 
+        // экспорт фичей на стороне БД
+        await RunExport(prj, data);
+
+        // экспорт атрибутов фичей        
         var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
 
         foreach (var f in data.Features)
@@ -62,25 +62,29 @@ public class ExportController : Controller
 
             var feature = features.Single(ft => ft.Code == f.Code);
 
-            if (f.Attributes != null)
+            if (f.Attributes == null) continue;
+            
+            foreach (var attr in f.Attributes)
             {
-                foreach (var attr in f.Attributes)
+                foreach (var valCode in attr.Value)
                 {
-                    foreach (var valCode in attr.Value)
+                    if (!feature.Attributes.Any(a => a.Code == valCode && a.Attribute.Code == attr.Key))
                     {
-                        if (!feature.Attributes.Any(a => a.Code == valCode && a.Attribute.Code == attr.Key))
-                        {
-                            var attribute = attributes.Single(a => a.Code == attr.Key);
-                            var value = GetAttributeValue(valCode, values, attribute);
+                        var attribute = attributes.Single(a => a.Code == attr.Key);
+                        var value = GetAttributeValue(valCode, values, attribute);
 
-                            feature.Attributes.Add(value);
-                        }
+                        feature.Attributes.Add(value);
                     }
                 }
             }
         }
 
-        // trees
+        // экспорт деревьев
+        var trees = await db.Trees
+            .Include(t => t.AttributeGroupOrders)
+            .Where(t => t.ProjectId == prj.Id)
+            .ToListAsync();
+
         foreach (var t in data.Trees)
         {
             var tree = GetTree(t, trees, prj);
@@ -222,7 +226,10 @@ public class ExportController : Controller
                 {
                     foreach (var assertion in group.Assertions)
                     {
-                        await assertionWriter.AddAssertion(export.Id, feature.Code, group.Title,
+                        await assertionWriter.AddAssertion(
+                            export.Id,
+                            feature.Code,
+                            group.Title,
                             assertion.Title,
                             assertion.Description, assertion.IsAutomated);
                     }
@@ -231,7 +238,33 @@ public class ExportController : Controller
 
             await assertionWriter.CompleteAsync();
         }
-        
+
+        // экспорт атрибутов фичей
+        await using (var featureAttributeWriter = connection.CreateFeatureAttributeWriter())
+        {
+            foreach (var feature in data.Features)
+            {
+                if (feature.Attributes == null) continue;
+                
+                foreach (var attribute in feature.Attributes)
+                {
+                    var attributeCode = attribute.Key;
+
+                    foreach (var valueCode in attribute.Value)
+                    {
+                        await featureAttributeWriter.AddFeatureAttribute(
+                            export.Id,
+                            feature.Code,
+                            attributeCode,
+                            valueCode
+                        );
+                    }
+                }
+            }
+
+            await featureAttributeWriter.CompleteAsync();
+        }
+
         // запускаем обработку данных
         await db.MergeExportedData(export.Id);
     }
