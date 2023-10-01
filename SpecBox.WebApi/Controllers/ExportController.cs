@@ -55,8 +55,6 @@ public class ExportController : Controller
         await db.SaveChangesAsync();
 
         var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
-        var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
-        var assertions = await db.Assertions.Where(a => a.AssertionGroup.Feature.ProjectId == prj.Id).ToListAsync();
 
         foreach (var f in data.Features)
         {
@@ -78,37 +76,6 @@ public class ExportController : Controller
                             feature.Attributes.Add(value);
                         }
                     }
-                }
-            }
-
-            foreach (var g in f.Groups)
-            {
-                var group = GetGroup(g, groups, feature);
-
-                foreach (var a in g.Assertions)
-                {
-                    logger.LogInformation("process assertion: {Title}", a.Title);
-
-                    var assertion = assertions.SingleOrDefault(x =>
-                        x.AssertionGroup.Id == group.Id &&
-                        StringComparer.InvariantCultureIgnoreCase.Equals(x.Title, a.Title));
-
-                    if (assertion == null)
-                    {
-                        assertion = new Assertion
-                        {
-                            Id = Guid.NewGuid(),
-                            Title = a.Title,
-                            AssertionGroupId = group.Id,
-                            AssertionGroup = group,
-                        };
-
-                        assertions.Add(assertion);
-                        db.Assertions.Add(assertion);
-                    }
-
-                    assertion.Description = a.Description;
-                    assertion.IsAutomated = a.IsAutomated;
                 }
             }
         }
@@ -200,28 +167,6 @@ public class ExportController : Controller
         }
 
         return value;
-    }
-
-    private AssertionGroup GetGroup(AssertionGroupModel model, List<AssertionGroup> groups, Feature feature)
-    {
-        logger.LogInformation("process assertion group: {Title}", model.Title);
-
-        var group = groups.SingleOrDefault(obj => obj.Title == model.Title);
-
-        if (group == null)
-        {
-            group = new AssertionGroup
-            {
-                Id = Guid.NewGuid(),
-                Title = model.Title,
-                FeatureId = feature.Id,
-            };
-
-            db.AssertionGroups.Add(group);
-            groups.Add(group);
-        }
-
-        return group;
     }
 
     private Tree GetTree(TreeModel model, List<Tree> trees, Project project)
