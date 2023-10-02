@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
+using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Project;
 
 namespace SpecBox.WebApi.Controllers;
@@ -38,8 +39,39 @@ public class ProjectController : Controller
     [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
     public async Task<IActionResult> Structure(string project)
     {
-        var tree = await db.Trees.FirstAsync(t => t.Project.Code == project);
-        
+        var tree = await db.Trees.FirstOrDefaultAsync(t => t.Project.Code == project);
+
+        var nodes = tree == null
+            ? await GetDefaultTreeModel(project)
+            : await GetTreeModel(tree);
+
+        var model = new StructureModel
+        {
+            Tree = nodes
+        };
+
+        return Json(model);
+    }
+
+    private async Task<TreeNodeModel[]> GetDefaultTreeModel(string projectCode)
+    {
+        var nodes = await db.Features
+            .Where(f => f.Project.Code == projectCode)
+            .Select(f => new TreeNodeModel
+            {
+                Id = f.Id,
+                Title = f.Title,
+                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
+                FeatureCode = f.Code,
+            })
+            .ToArrayAsync();
+
+        return nodes;
+    }
+
+    private async Task<TreeNodeModel[]> GetTreeModel(Tree tree)
+    {
         var nodes = await db.TreeNodes
             .Where(n => n.TreeId == tree.Id)
             .Select(n => new TreeNodeModel
@@ -53,12 +85,6 @@ public class ProjectController : Controller
             })
             .ToArrayAsync();
 
-        var model = new StructureModel
-        {
-            Code = tree.Code,
-            Tree = nodes
-        };
-
-        return Json(model);
+        return nodes;
     }
 }
