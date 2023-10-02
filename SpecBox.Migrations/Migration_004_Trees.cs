@@ -42,6 +42,6 @@ public class Migration_004_Trees : Migration
         Database.AddForeignKey("FK_TreeNode_FeatureId", "TreeNode", "FeatureId", "Feature", "Id");
         Database.AddForeignKey("FK_TreeNode_ParentId", "TreeNode", "ParentId", "TreeNode", "Id");
 
-        Database.ExecuteFromResource(GetType().Assembly, "SpecBox.Migrations.Resources.BuildTree.sql");
+        Database.ExecuteFromResource(GetType().Assembly, "SpecBox.Migrations.Resources.004_BuildTree.sql");
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
+using SpecBox.Domain.BulkCopy;
 using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Upload;
 using Attribute = SpecBox.Domain.Model.Attribute;
@@ -25,11 +26,10 @@ public class ExportController : Controller
     {
         await using var tran = await db.Database.BeginTransactionAsync();
 
+        // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
-        var trees = await db.Trees.Include(t => t.AttributeGroupOrders).Where(t => t.ProjectId == prj.Id).ToListAsync();
-        var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
-        var groups = await db.AssertionGroups.Where(e => e.Feature.ProjectId == prj.Id).ToListAsync();
-        var assertions = await db.Assertions.Where(a => a.AssertionGroup.Feature.ProjectId == prj.Id).ToListAsync();
+        
+        // экспорт атрибутов и значений
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
             .Include(v => v.Attribute)
@@ -50,63 +50,15 @@ public class ExportController : Controller
 
         await db.SaveChangesAsync();
 
-        foreach (var f in data.Features)
-        {
-            var feature = GetFeature(f, features, prj);
-            feature.Title = f.Title;
-            feature.Description = f.Description;
-            feature.FilePath = f.FilePath;
+        // экспорт фичей на стороне БД
+        await RunExport(prj, data);
 
-            if (f.Attributes != null)
-            {
-                foreach (var attr in f.Attributes)
-                {
-                    foreach (var valCode in attr.Value)
-                    {
-                        if (!feature.Attributes.Any(a => a.Code == valCode && a.Attribute.Code == attr.Key))
-                        {
-                            var attribute = attributes.Single(a => a.Code == attr.Key);
-                            var value = GetAttributeValue(valCode, values, attribute);
+        // экспорт деревьев
+        var trees = await db.Trees
+            .Include(t => t.AttributeGroupOrders)
+            .Where(t => t.ProjectId == prj.Id)
+            .ToListAsync();
 
-                            feature.Attributes.Add(value);
-                        }
-                    }
-                }
-            }
-
-            foreach (var g in f.Groups)
-            {
-                var group = GetGroup(g, groups, feature);
-
-                foreach (var a in g.Assertions)
-                {
-                    logger.LogInformation("process assertion: {Title}", a.Title);
-
-                    var assertion = assertions.SingleOrDefault(x =>
-                        x.AssertionGroup.Id == group.Id &&
-                        StringComparer.InvariantCultureIgnoreCase.Equals(x.Title, a.Title));
-
-                    if (assertion == null)
-                    {
-                        assertion = new Assertion
-                        {
-                            Id = Guid.NewGuid(),
-                            Title = a.Title,
-                            AssertionGroupId = group.Id,
-                            AssertionGroup = group,
-                        };
-
-                        assertions.Add(assertion);
-                        db.Assertions.Add(assertion);
-                    }
-
-                    assertion.Description = a.Description;
-                    assertion.IsAutomated = a.IsAutomated;
-                }
-            }
-        }
-
-        // trees
         foreach (var t in data.Trees)
         {
             var tree = GetTree(t, trees, prj);
@@ -133,28 +85,12 @@ public class ExportController : Controller
         }
 
         await db.SaveChangesAsync();
-        
+
+        // формируем деревья
         await db.BuildTree(prj.Id);
 
-        // stat
-        var allAssertions = data.Features
-            .SelectMany(f => f.Groups)
-            .SelectMany(gr => gr.Assertions)
-            .ToArray();
-
-        var statRecord = new AssertionsStatRecord
-        {
-            Id = Guid.NewGuid(),
-            ProjectId = prj.Id,
-            Project = prj,
-            Timestamp = DateTime.UtcNow,
-            TotalCount = allAssertions.Length,
-            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
-        };
-
-        db.AssertionsStat.Add(statRecord);
-
-        await db.SaveChangesAsync();
+        // сохраняем статистику
+        await WriteStat(prj.Id, data);
 
         await tran.CommitAsync();
 
@@ -211,53 +147,6 @@ public class ExportController : Controller
         return value;
     }
 
-    private Feature GetFeature(FeatureModel model, List<Feature> features, Project project)
-    {
-        logger.LogInformation("process feature: {Code}", model.Code);
-
-        var feature = features.SingleOrDefault(f => f.Code == model.Code);
-
-        if (feature == null)
-        {
-            logger.LogInformation("feature doesn't exist, it will be created");
-
-            feature = new Feature
-            {
-                Id = Guid.NewGuid(),
-                ProjectId = project.Id,
-                Project = project,
-                Code = model.Code,
-            };
-
-            db.Features.Add(feature);
-            features.Add(feature);
-        }
-
-        return feature;
-    }
-
-    private AssertionGroup GetGroup(AssertionGroupModel model, List<AssertionGroup> groups, Feature feature)
-    {
-        logger.LogInformation("process assertion group: {Title}", model.Title);
-
-        var group = groups.SingleOrDefault(obj => obj.Title == model.Title);
-
-        if (group == null)
-        {
-            group = new AssertionGroup
-            {
-                Id = Guid.NewGuid(),
-                Title = model.Title,
-                FeatureId = feature.Id,
-            };
-
-            db.AssertionGroups.Add(group);
-            groups.Add(group);
-        }
-
-        return group;
-    }
-
     private Tree GetTree(TreeModel model, List<Tree> trees, Project project)
     {
         logger.LogInformation("process tree: {Title}", model.Title);
@@ -277,5 +166,102 @@ public class ExportController : Controller
         }
 
         return tree;
+    }
+
+    private async Task RunExport(Project project, UploadData data)
+    {
+        // добавляем новый экспорт
+        var export = new Export { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow };
+
+        db.Exports.Add(export);
+        await db.SaveChangesAsync();
+
+        // сохраняем данные в таблицу
+        var connection = await db.GetConnection();
+
+        await using (var featureWriter = connection.CreateFeatureWriter())
+        {
+            // экспорт фичей
+            foreach (var feature in data.Features)
+            {
+                await featureWriter.AddFeature(export.Id, feature.Code, feature.Title, feature.Description,
+                    feature.FilePath);
+            }
+
+            await featureWriter.CompleteAsync();
+        }
+
+        // экспорт утверждений
+        await using (var assertionWriter = connection.CreateAssertionWriter())
+        {
+            foreach (var feature in data.Features)
+            {
+                foreach (var group in feature.Groups)
+                {
+                    foreach (var assertion in group.Assertions)
+                    {
+                        await assertionWriter.AddAssertion(
+                            export.Id,
+                            feature.Code,
+                            group.Title,
+                            assertion.Title,
+                            assertion.Description, assertion.IsAutomated);
+                    }
+                }
+            }
+
+            await assertionWriter.CompleteAsync();
+        }
+
+        // экспорт атрибутов фичей
+        await using (var featureAttributeWriter = connection.CreateFeatureAttributeWriter())
+        {
+            foreach (var feature in data.Features)
+            {
+                if (feature.Attributes == null) continue;
+                
+                foreach (var attribute in feature.Attributes)
+                {
+                    var attributeCode = attribute.Key;
+
+                    foreach (var valueCode in attribute.Value)
+                    {
+                        await featureAttributeWriter.AddFeatureAttribute(
+                            export.Id,
+                            feature.Code,
+                            attributeCode,
+                            valueCode
+                        );
+                    }
+                }
+            }
+
+            await featureAttributeWriter.CompleteAsync();
+        }
+
+        // запускаем обработку данных
+        await db.MergeExportedData(export.Id);
+    }
+
+    private async Task WriteStat(Guid projectId, UploadData data)
+    {
+        // stat
+        var allAssertions = data.Features
+            .SelectMany(f => f.Groups)
+            .SelectMany(gr => gr.Assertions)
+            .ToArray();
+
+        var statRecord = new AssertionsStatRecord
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            Timestamp = DateTime.UtcNow,
+            TotalCount = allAssertions.Length,
+            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
+        };
+
+        db.AssertionsStat.Add(statRecord);
+
+        await db.SaveChangesAsync();
     }
 }

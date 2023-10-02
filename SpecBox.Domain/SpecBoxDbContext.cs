@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain.Model;
 using Attribute = SpecBox.Domain.Model.Attribute;
 using Npgsql;
@@ -31,22 +33,41 @@ public class SpecBoxDbContext : DbContext
     public DbSet<AttributeGroupOrder> AttributeGroupOrders { get; set; } = null!;
 
     public DbSet<AutotestsStatRecord> AutotestsStat { get; set; } = null!;
-    
+
     public DbSet<AssertionsStatRecord> AssertionsStat { get; set; } = null!;
 
-    public async Task BuildTree(Guid projectId)
-    {
-        var connection = Database.GetDbConnection();
-        
-        if (connection is NpgsqlConnection npgsqlConnection)
-        {
-            await using var cmd = new NpgsqlCommand("CALL \"BuildTree\"($1)", npgsqlConnection)
-            {
-                Parameters = { new NpgsqlParameter { Value = projectId } }
-            };
+    public DbSet<Export> Exports { get; set; } = null!;
+    public async Task BuildTree(Guid projectId) => await ExecuteSQL("CALL \"BuildTree\"($1)", projectId);
+    public async Task MergeExportedData(Guid exportId) => await ExecuteSQL("CALL \"MergeExportedData\"($1)", exportId);
 
-            await cmd.ExecuteNonQueryAsync();
+    public async Task<NpgsqlConnection> GetConnection()
+    {
+        var connection = Database.GetDbConnection() as NpgsqlConnection;
+
+        Debug.Assert(connection != null, nameof(connection) + " != null");
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
         }
+        
+        return connection;
+    }
+
+    private async Task ExecuteSQL(string commandText, params object[] args) {
+        var connection = await GetConnection();
+        
+        await using var command = connection.CreateCommand();
+        command.CommandText = commandText;
+
+        foreach (var paramValue in args)
+        {
+            var param = command.CreateParameter();
+            param.Value = paramValue;
+            command.Parameters.Add(param);
+        }
+
+        await command.ExecuteNonQueryAsync();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
