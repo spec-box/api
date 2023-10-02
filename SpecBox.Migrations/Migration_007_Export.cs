@@ -63,6 +63,6 @@ public class Migration_007_Export : Migration
         Database.AddForeignKey("FK_ExportFeatureAttribute_ExportId", "ExportFeatureAttribute", "ExportId", "Export", "Id");
         
         
-        Database.ExecuteFromResource(GetType().Assembly, "SpecBox.Migrations.Resources.MergeExportedData.sql");
+        Database.ExecuteFromResource(GetType().Assembly, "SpecBox.Migrations.Resources.007_MergeExportedData.sql");
     }
 }

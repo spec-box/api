@@ -53,32 +53,6 @@ public class ExportController : Controller
         // экспорт фичей на стороне БД
         await RunExport(prj, data);
 
-        // экспорт атрибутов фичей        
-        var features = await db.Features.Include(f => f.Attributes).Where(e => e.ProjectId == prj.Id).ToListAsync();
-
-        foreach (var f in data.Features)
-        {
-            logger.LogInformation("process feature: {Code}", f.Code);
-
-            var feature = features.Single(ft => ft.Code == f.Code);
-
-            if (f.Attributes == null) continue;
-            
-            foreach (var attr in f.Attributes)
-            {
-                foreach (var valCode in attr.Value)
-                {
-                    if (!feature.Attributes.Any(a => a.Code == valCode && a.Attribute.Code == attr.Key))
-                    {
-                        var attribute = attributes.Single(a => a.Code == attr.Key);
-                        var value = GetAttributeValue(valCode, values, attribute);
-
-                        feature.Attributes.Add(value);
-                    }
-                }
-            }
-        }
-
         // экспорт деревьев
         var trees = await db.Trees
             .Include(t => t.AttributeGroupOrders)

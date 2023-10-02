@@ -119,6 +119,53 @@ BEGIN
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'updated assertions: %', rowsCount;
 
+    -- ## ЭКСПОРТ АТРИБУТОВ ФИЧЕЙ
+    -- создаем временную таблицу атрибутов фичей
+    CREATE TEMPORARY TABLE tmp_feature_attribute
+    (
+        featureId          uuid    not null,
+        attributeId        uuid    not null,
+        attributeValueCode varchar not null
+    ) ON COMMIT DROP;
+
+    -- заполняем данными временную таблицу атрибутов фичей
+    INSERT INTO tmp_feature_attribute (featureId, attributeId, attributeValueCode)
+    SELECT f."Id" as featureId, a."Id" attributeId, fa."AttributeValueCode" as attributeValueCode
+    FROM public."ExportFeatureAttribute" fa
+             JOIN public."Feature" f ON f."Code" = fa."FeatureCode" AND f."ProjectId" = projectId
+             JOIN public."Attribute" a ON a."Code" = fa."AttributeCode" AND a."ProjectId" = projectId
+    WHERE fa."ExportId" = exportId;
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'exported feature attribute values: %', rowsCount;
+
+    -- добавляем недостающие значения в таблицу значений атрибутов
+    MERGE INTO public."AttributeValue" av
+    USING (select attributeId, attributeValueCode
+           from tmp_feature_attribute
+           group by attributeId, attributeValueCode) t
+    ON av."AttributeId" = t.attributeId AND av."Code" = t.attributeValueCode
+    WHEN NOT MATCHED THEN
+        INSERT ("AttributeId", "Code", "Title")
+        VALUES (t.attributeId, t.attributeValueCode, t.attributeValueCode);
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'added attribute values: %', rowsCount;
+
+    -- добавляем недостающие связи значений атрибутов с фичами
+    MERGE INTO public."FeatureAttributeValue" fav
+    USING (select featureId, av."Id" attributeValueId
+           from tmp_feature_attribute as x
+                    join public."AttributeValue" av
+                         on av."AttributeId" = x.attributeId and av."Code" = x.attributeValueCode) t
+    ON fav."FeatureId" = t.featureId AND fav."AttributeValueId" = t.attributeValueId
+    WHEN NOT MATCHED THEN
+        INSERT ("FeatureId", "AttributeValueId")
+        VALUES (t.featureId, t.attributeValueId);
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'added feature attribute values: %', rowsCount;
+
     -- ## УДАЛЯЕМ НЕАКТУАЛЬНЫЕ ДАННЫЕ
 
     DELETE
@@ -126,6 +173,31 @@ BEGIN
         USING public."Feature" f
     WHERE tn."FeatureId" = f."Id"
       AND f."ProjectId" = projectId;
+
+    -- удаляем неактуальные связи фичей со значениями атрибутов
+    DELETE
+    FROM public."FeatureAttributeValue"
+        USING public."FeatureAttributeValue" fav
+            JOIN public."AttributeValue" av ON fav."AttributeValueId" = av."Id"
+            LEFT OUTER JOIN tmp_feature_attribute t
+            ON fav."FeatureId" = t.featureId AND av."AttributeId" = t.attributeId AND av."Code" = t.attributeValueCode
+    WHERE public."FeatureAttributeValue"."FeatureId" = fav."FeatureId"
+      AND public."FeatureAttributeValue"."AttributeValueId" = av."Id"
+      AND t.featureId IS NULL;
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'deleted feature attribute values: %', rowsCount;
+
+    -- удаляем неактуальные значения атрибутов
+    DELETE
+    FROM public."AttributeValue"
+        USING public."AttributeValue" av
+            LEFT OUTER JOIN public."FeatureAttributeValue" fav ON av."Id" = fav."AttributeValueId"
+    WHERE public."AttributeValue"."Id" = av."Id"
+      AND fav."AttributeValueId" IS NULL;
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'deleted attribute values: %', rowsCount;
 
     -- удаляем неактуальные утверждения
     DELETE
