@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.WebApi.Model;
@@ -5,9 +6,14 @@ using SpecBox.WebApi.Model;
 var builder = WebApplication.CreateBuilder(args);
 
 string? cstring = builder.Configuration.GetConnectionString("default");
-builder.Services.AddDbContext<SpecBoxDbContext>(cfg =>cfg.UseNpgsql(cstring));
+builder.Services.AddDbContext<SpecBoxDbContext>(cfg => cfg.UseNpgsql(cstring));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(option =>
+    {
+        option.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<ProjectProfile>());

@@ -4,11 +4,9 @@ namespace SpecBox.WebApi.Model.Project;
 
 public class TreeNodeModel
 {
-    [Required] public string Id { get; set; } = null!;
+    [Required] public Guid Id { get; set; }
 
-    [Required] public string[] Path { get; set; } = null!;
-
-    public string? ParentId { get; set; } = null!;
+    public Guid? ParentId { get; set; }
     
     public string? FeatureCode { get; set; } = null!;
 

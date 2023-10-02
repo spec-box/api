@@ -36,24 +36,27 @@ public class ProjectController : Controller
 
     [HttpGet("{project}/structure")]
     [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
-    public IActionResult Structure(string project)
+    public async Task<IActionResult> Structure(string project)
     {
-        var tree = db.Features
-            .Where(f => f.Project.Code == project)
-            .Select(f => new TreeNodeModel
+        var tree = await db.Trees.FirstAsync(t => t.Project.Code == project);
+        
+        var nodes = await db.TreeNodes
+            .Where(n => n.TreeId == tree.Id)
+            .Select(n => new TreeNodeModel
             {
-                Id = f.Id.ToString(),
-                Path = new[] { f.Id.ToString() },
-                Title = f.Title,
-                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
-                FeatureCode = f.Code
+                Id = n.Id,
+                ParentId = n.ParentId,
+                Title = n.Title,
+                TotalCount = n.Amount,
+                AutomatedCount = n.AmountAutomated,
+                FeatureCode = n.Feature == null ? null : n.Feature.Code,
             })
-            .ToArray();
+            .ToArrayAsync();
 
         var model = new StructureModel
         {
-            Tree = tree
+            Code = tree.Code,
+            Tree = nodes
         };
 
         return Json(model);
