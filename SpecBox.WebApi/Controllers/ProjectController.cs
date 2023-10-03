@@ -21,6 +21,17 @@ public class ProjectController : Controller
         this.mapper = mapper;
     }
 
+    [HttpGet("list")]
+    [ProducesResponseType(typeof(ProjectModel[]), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Projects()
+    {
+        var projects = await db.Projects.ToArrayAsync();
+
+        var model = projects.Select(mapper.Map<Project, ProjectModel>).ToArray();
+
+        return Json(model);
+    }
+
     [HttpGet("{project}/features/{feature}")]
     [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
     public IActionResult Feature(string project, string feature)
