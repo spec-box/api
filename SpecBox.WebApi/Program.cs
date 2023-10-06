@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Console;
 using SpecBox.Domain;
+using SpecBox.WebApi.Lib.Logging;
 using SpecBox.WebApi.Model;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,7 +27,10 @@ builder.Services.AddSwaggerGen(opts =>
     opts.SupportNonNullableReferenceTypes();
 });
 
-builder.Logging.ClearProviders().AddConsole();
+builder.Logging
+    .ClearProviders()
+    .AddConsole()
+    .AddConsoleFormatter<ConsoleJsonFormatter, ConsoleFormatterOptions>();
 
 var app = builder.Build();
 
