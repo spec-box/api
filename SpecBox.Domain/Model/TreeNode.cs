@@ -12,11 +12,11 @@ public class TreeNode
     public int AmountAutomated { get; set; }
 
     public Guid? FeatureId { get; set; } = null!;
-    public Feature Feature { get; set; } = null!;
+    public Feature? Feature { get; set; } = null!;
 
     public Guid TreeId { get; set; }
     public Tree Tree { get; set; } = null!;
 
     public Guid? ParentId { get; set; } = null!;
-    public TreeNode Parent { get; set; } = null!;
+    public TreeNode? Parent { get; set; } = null!;
 }

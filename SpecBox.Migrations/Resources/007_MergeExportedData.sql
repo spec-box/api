@@ -178,6 +178,8 @@ BEGIN
     DELETE
     FROM public."FeatureAttributeValue"
         USING public."FeatureAttributeValue" fav
+            INNER JOIN public."Feature" f
+            ON fav."FeatureId" = f."Id" AND f."ProjectId" = projectId
             JOIN public."AttributeValue" av ON fav."AttributeValueId" = av."Id"
             LEFT OUTER JOIN tmp_feature_attribute t
             ON fav."FeatureId" = t.featureId AND av."AttributeId" = t.attributeId AND av."Code" = t.attributeValueCode
@@ -192,6 +194,7 @@ BEGIN
     DELETE
     FROM public."AttributeValue"
         USING public."AttributeValue" av
+            INNER JOIN public."Attribute" a ON av."AttributeId" = a."Id" AND a."ProjectId" = projectId
             LEFT OUTER JOIN public."FeatureAttributeValue" fav ON av."Id" = fav."AttributeValueId"
     WHERE public."AttributeValue"."Id" = av."Id"
       AND fav."AttributeValueId" IS NULL;
@@ -203,6 +206,10 @@ BEGIN
     DELETE
     FROM public."Assertion"
         USING public."Assertion" a
+            INNER JOIN public."AssertionGroup" gr
+            ON a."AssertionGroupId" = gr."Id"
+            INNER JOIN public."Feature" f
+            ON gr."FeatureId" = f."Id" AND f."ProjectId" = projectId
             LEFT OUTER JOIN tmp_assertion t
             ON a."AssertionGroupId" = t.groupId AND a."Title" = t.title
     WHERE public."Assertion"."Id" = a."Id"
@@ -215,6 +222,8 @@ BEGIN
     DELETE
     FROM public."AssertionGroup"
         USING public."AssertionGroup" gr
+            INNER JOIN public."Feature" f
+            ON gr."FeatureId" = f."Id" AND f."ProjectId" = projectId
             LEFT OUTER JOIN tmp_group t
             ON gr."FeatureId" = t.featureId AND gr."Title" = t.title
     WHERE public."AssertionGroup"."Id" = gr."Id"
@@ -228,8 +237,9 @@ BEGIN
     FROM public."Feature"
         USING public."Feature" f
             LEFT OUTER JOIN tmp_feature t
-            ON f."ProjectId" = projectId AND f."Code" = t.code
+            ON f."Code" = t.code
     WHERE public."Feature"."Id" = f."Id"
+      AND f."ProjectId" = projectId
       AND t.code IS NULL;
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;

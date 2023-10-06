@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
+using SpecBox.Domain.Model;
 using SpecBox.WebApi.Model.Project;
 
 namespace SpecBox.WebApi.Controllers;
@@ -20,6 +21,17 @@ public class ProjectController : Controller
         this.mapper = mapper;
     }
 
+    [HttpGet("list")]
+    [ProducesResponseType(typeof(ProjectModel[]), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Projects()
+    {
+        var projects = await db.Projects.ToArrayAsync();
+
+        var model = projects.Select(mapper.Map<Project, ProjectModel>).ToArray();
+
+        return Json(model);
+    }
+
     [HttpGet("{project}/features/{feature}")]
     [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
     public IActionResult Feature(string project, string feature)
@@ -36,26 +48,54 @@ public class ProjectController : Controller
 
     [HttpGet("{project}/structure")]
     [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
-    public IActionResult Structure(string project)
+    public async Task<IActionResult> Structure(string project)
     {
-        var tree = db.Features
-            .Where(f => f.Project.Code == project)
-            .Select(f => new TreeNodeModel
-            {
-                Id = f.Id.ToString(),
-                Path = new[] { f.Id.ToString() },
-                Title = f.Title,
-                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
-                FeatureCode = f.Code
-            })
-            .ToArray();
+        var tree = await db.Trees.FirstOrDefaultAsync(t => t.Project.Code == project);
+
+        var nodes = tree == null
+            ? await GetDefaultTreeModel(project)
+            : await GetTreeModel(tree);
 
         var model = new StructureModel
         {
-            Tree = tree
+            Tree = nodes
         };
 
         return Json(model);
+    }
+
+    private async Task<TreeNodeModel[]> GetDefaultTreeModel(string projectCode)
+    {
+        var nodes = await db.Features
+            .Where(f => f.Project.Code == projectCode)
+            .Select(f => new TreeNodeModel
+            {
+                Id = f.Id,
+                Title = f.Title,
+                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
+                FeatureCode = f.Code,
+            })
+            .ToArrayAsync();
+
+        return nodes;
+    }
+
+    private async Task<TreeNodeModel[]> GetTreeModel(Tree tree)
+    {
+        var nodes = await db.TreeNodes
+            .Where(n => n.TreeId == tree.Id)
+            .Select(n => new TreeNodeModel
+            {
+                Id = n.Id,
+                ParentId = n.ParentId,
+                Title = n.Title,
+                TotalCount = n.Amount,
+                AutomatedCount = n.AmountAutomated,
+                FeatureCode = n.Feature == null ? null : n.Feature.Code,
+            })
+            .ToArrayAsync();
+
+        return nodes;
     }
 }
