@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SpecBox.WebApi.Model.Project;
+namespace SpecBox.WebApi.Model.Common;
 
 public class ProjectModel
 {

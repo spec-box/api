@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
+using SpecBox.WebApi.Model.Common;
 using SpecBox.WebApi.Model.Project;
 
 namespace SpecBox.WebApi.Controllers;
@@ -50,14 +51,18 @@ public class ProjectController : Controller
     [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
     public async Task<IActionResult> Structure(string project)
     {
-        var tree = await db.Trees.FirstOrDefaultAsync(t => t.Project.Code == project);
+        var prj = await db.Projects.SingleAsync(p => p.Code == project);
+        var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id);
 
+        var projectModel = mapper.Map<Project, ProjectModel>(prj);
+        
         var nodes = tree == null
             ? await GetDefaultTreeModel(project)
             : await GetTreeModel(tree);
 
         var model = new StructureModel
         {
+            Project = projectModel,
             Tree = nodes
         };
 

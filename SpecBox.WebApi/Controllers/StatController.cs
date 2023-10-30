@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
+using SpecBox.WebApi.Model.Common;
 using SpecBox.WebApi.Model.Stat;
 
 namespace SpecBox.WebApi.Controllers;
@@ -21,7 +22,7 @@ public class StatController : Controller
         this.mapper = mapper;
     }
 
-    [HttpPost("autotests/upload")]
+    [HttpPost("upload-autotests")]
     public async Task<IActionResult> AutotestsStatUpload(
         [FromQuery(Name = "project")] string projectCode,
         [FromBody] AutotestsStatUploadData data)
@@ -45,8 +46,8 @@ public class StatController : Controller
         return Ok();
     }
 
-    [HttpGet("autotests")]
-    [ProducesResponseType(typeof(AutotestsStatModel[]), StatusCodes.Status200OK)]
+    [HttpGet]
+    [ProducesResponseType(typeof(StatModel), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAutotestsStat(
         [FromQuery(Name = "project")] string projectCode,
         [FromQuery(Name = "from")] DateTime? dateFrom,
@@ -55,38 +56,31 @@ public class StatController : Controller
         var project = await db.Projects.SingleAsync(p => p.Code == projectCode);
         var from = NormalizeDateFrom(dateFrom);
         var to = NormalizeDateTo(dateTo);
-
-        var stat = db.AutotestsStat
+        
+        var assertions = await db.AssertionsStat
             .Where(assertion =>
                 assertion.ProjectId == project.Id &&
                 assertion.Timestamp >= from &&
                 assertion.Timestamp < to)
-            .ToArray();
-
-        return Json(stat.Select(mapper.Map<AutotestsStatModel>));
-    }
-
-    [HttpGet("assertions")]
-    [ProducesResponseType(typeof(AssertionsStatModel[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAssertionsStat(
-        [FromQuery(Name = "project")] string projectCode,
-        [FromQuery(Name = "from")] DateTime? dateFrom,
-        [FromQuery(Name = "to")] DateTime? dateTo)
-    {
-        var project = await db.Projects.SingleAsync(p => p.Code == projectCode);
-        var from = NormalizeDateFrom(dateFrom);
-        var to = NormalizeDateTo(dateTo);
-
-        var stat = db.AssertionsStat
+            .ToArrayAsync();
+        
+        var autotests = await db.AutotestsStat
             .Where(assertion =>
                 assertion.ProjectId == project.Id &&
                 assertion.Timestamp >= from &&
                 assertion.Timestamp < to)
-            .ToArray();
+            .ToArrayAsync();
 
-        return Json(stat.Select(mapper.Map<AssertionsStatModel>));
+        var model = new StatModel
+        {
+            Assertions = assertions.Select(mapper.Map<AssertionsStatModel>).ToArray(),
+            Autotests = autotests.Select(mapper.Map<AutotestsStatModel>).ToArray(),
+            Project = mapper.Map<ProjectModel>(project)
+        };
+        
+        return Json(model);
     }
-
+    
     private static DateTime NormalizeDateFrom(DateTime? dateFrom)
     {
         // если значение не задано, то отдаем данные за последние 3 месяца

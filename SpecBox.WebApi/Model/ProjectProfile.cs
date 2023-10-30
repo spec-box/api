@@ -1,5 +1,6 @@
 using AutoMapper;
 using SpecBox.Domain.Model;
+using SpecBox.WebApi.Model.Common;
 using SpecBox.WebApi.Model.Project;
 using SpecBox.WebApi.Model.Stat;
 
