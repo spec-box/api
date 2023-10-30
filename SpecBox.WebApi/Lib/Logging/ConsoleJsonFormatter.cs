@@ -29,7 +29,7 @@ public class ConsoleJsonFormatter : ConsoleFormatter, IDisposable
         if (level.HasValue)
         {
             textWriter.Write($"\"levelStr\":\"{level.Value.name}\",");
-            textWriter.Write($"\"level\":\"{level.Value.value}\",");
+            textWriter.Write($"\"level\":{level.Value.value},");
         }
 
         var timestamp = DateTime.UtcNow.ToString("O");

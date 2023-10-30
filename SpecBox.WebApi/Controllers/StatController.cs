@@ -46,6 +46,7 @@ public class StatController : Controller
     }
 
     [HttpGet("autotests")]
+    [ProducesResponseType(typeof(AutotestsStatModel[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAutotestsStat(
         [FromQuery(Name = "project")] string projectCode,
         [FromQuery(Name = "from")] DateTime? dateFrom,
@@ -66,6 +67,7 @@ public class StatController : Controller
     }
 
     [HttpGet("assertions")]
+    [ProducesResponseType(typeof(AssertionsStatModel[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssertionsStat(
         [FromQuery(Name = "project")] string projectCode,
         [FromQuery(Name = "from")] DateTime? dateFrom,
