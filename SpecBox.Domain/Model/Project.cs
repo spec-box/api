@@ -9,4 +9,5 @@ public class Project
     public string Code { get; set; } = null!;
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
+    public string? RepositoryUrl { get; set; }
 }
