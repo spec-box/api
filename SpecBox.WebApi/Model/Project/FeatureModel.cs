@@ -10,5 +10,7 @@ public class FeatureModel
 
     public string? Description { get; set; }
     
+    public string? FilePath { get; set; }
+    
     [Required] public List<AssertionGroupModel> AssertionGroups { get; } = new();
 }
