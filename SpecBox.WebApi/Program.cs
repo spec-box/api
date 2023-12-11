@@ -1,4 +1,6 @@
+using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using SpecBox.Domain;
@@ -14,6 +16,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(option =>
     {
         option.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        option.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic);
     });
 
 builder.Services.AddEndpointsApiExplorer();
