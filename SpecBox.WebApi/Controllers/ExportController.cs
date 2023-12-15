@@ -40,11 +40,13 @@ public class ExportController : Controller
         {
             var attribute = GetAttribute(a, attributes, prj);
             attribute.Title = a.Title;
+            var sortOrder = 1;
 
             foreach (var v in a.Values)
             {
                 var value = GetAttributeValue(v.Code, values, attribute);
                 value.Title = v.Title;
+                value.SortOrder = sortOrder++;
             }
         }
 
