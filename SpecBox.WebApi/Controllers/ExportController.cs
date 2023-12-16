@@ -27,8 +27,9 @@ public class ExportController : Controller
         await using var tran = await db.Database.BeginTransactionAsync();
 
         // получаем проект из БД
-        var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
-        
+        var prj = await db.Projects.FirstOrDefaultAsync(p => p.Code == projectCode);
+        if (prj == null) return NotFound();
+
         // экспорт атрибутов и значений
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues

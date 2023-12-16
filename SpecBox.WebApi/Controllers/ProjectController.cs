@@ -23,8 +23,8 @@ public class ProjectController : Controller
     }
 
     [HttpGet("list")]
-    [ProducesResponseType(typeof(ProjectModel[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Projects()
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectModel[]>> Projects()
     {
         var projects = await db.Projects.ToArrayAsync();
 
@@ -34,28 +34,40 @@ public class ProjectController : Controller
     }
 
     [HttpGet("{project}/features/{feature}")]
-    [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
-    public IActionResult Feature(string project, string feature)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FeatureModel>> Feature(string project, string feature)
     {
-        var f = db.Features
-            .Include(f => f.AssertionGroups)
-            .ThenInclude(g => g.Assertions)
-            .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
+        try
+        {
+            var f = await db.Features
+                .Include(f => f.AssertionGroups)
+                .ThenInclude(g => g.Assertions)
+                .SingleOrDefaultAsync(f => f.Code == feature && f.Project.Code == project);
+            if (f == null) return NotFound();
 
-        var model = mapper.Map<FeatureModel>(f);
+            var model = mapper.Map<FeatureModel>(f);
 
-        return Json(model);
+            return Json(model);
+        }
+        catch (InvalidOperationException)
+        {
+            return Problem("Feature duplicate found", "Feature", StatusCodes.Status500InternalServerError);
+        }
     }
 
     [HttpGet("{project}/structure")]
-    [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Structure(string project)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StructureModel>> Structure(string project)
     {
-        var prj = await db.Projects.SingleAsync(p => p.Code == project);
+        var prj = await db.Projects.FirstOrDefaultAsync(p => p.Code == project);
+        if (prj == null) return NotFound();
+
         var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id);
 
         var projectModel = mapper.Map<Project, ProjectModel>(prj);
-        
+
         var nodes = tree == null
             ? await GetDefaultTreeModel(project)
             : await GetTreeModel(tree);
@@ -67,6 +79,47 @@ public class ProjectController : Controller
         };
 
         return Json(model);
+    }
+
+    [HttpGet("{project}/structure/{treeCode}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StructureModel>> Structure(string project, string treeCode)
+    {
+        var prj = await db.Projects.FirstOrDefaultAsync(p => p.Code == project);
+        if (prj == null) return NotFound();
+
+        var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id && t.Code == treeCode);
+        if (tree == null) return NotFound();
+
+        var projectModel = mapper.Map<Project, ProjectModel>(prj);
+
+        var nodes = await GetTreeModel(tree);
+
+        var model = new StructureModel
+        {
+            Project = projectModel,
+            Tree = nodes
+        };
+
+        return Json(model);
+    }
+
+    [HttpGet("{project}/trees")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TreeModel>> ListTrees(string project)
+    {
+        var prj = await db.Projects.FirstOrDefaultAsync(p => p.Code == project);
+        if (prj == null) return NotFound();
+
+        var trees = await db.Trees.Where(t => t.ProjectId == prj.Id).Select((tree) => new TreeModel
+        {
+            Code = tree.Code,
+            Title = tree.Title
+        }).ToArrayAsync();
+
+        return Json(trees);
     }
 
     private async Task<TreeNodeModel[]> GetDefaultTreeModel(string projectCode)
