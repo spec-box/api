@@ -27,7 +27,8 @@ public class StatController : Controller
         [FromQuery(Name = "project")] string projectCode,
         [FromBody] AutotestsStatUploadData data)
     {
-        var project = await db.Projects.SingleAsync(p => p.Code == projectCode);
+        var project = await db.Projects.FirstOrDefaultAsync(p => p.Code == projectCode);
+        if(project == null) return NotFound();
 
         var statRecord = new AutotestsStatRecord
         {
