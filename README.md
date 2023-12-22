@@ -47,5 +47,5 @@ docker run -p 5000:80 -t spec-box-api:0.0.1
 
 ### Информация
 
-- документация API: https://localhost:7264/swagger
+- документация API: http://localhost:8080/swagger
 

@@ -98,6 +98,7 @@ public class ProjectController : Controller
                 TotalCount = n.Amount,
                 AutomatedCount = n.AmountAutomated,
                 FeatureCode = n.Feature == null ? null : n.Feature.Code,
+                SortOrder = n.SortOrder,
             })
             .ToArrayAsync();
 
