@@ -7,7 +7,7 @@ public class TreeNode
 {
     public Guid Id { get; set; }
 
-    public string Title { get; set; } = null!;
+    public string? Title { get; set; }
     public int Amount { get; set; }
     public int AmountAutomated { get; set; }
     public int? SortOrder { get; set; }

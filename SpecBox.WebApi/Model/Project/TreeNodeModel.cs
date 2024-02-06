@@ -10,7 +10,7 @@ public class TreeNodeModel
 
     public string? FeatureCode { get; set; } = null!;
 
-    [Required] public string Title { get; set; } = null!;
+    public string? Title { get; set; }
 
     [Required] public int TotalCount { get; set; }
 
