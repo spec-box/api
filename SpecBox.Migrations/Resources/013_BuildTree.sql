@@ -18,6 +18,7 @@ TEMPORARY TABLE temp_path_to_feature (
 	"FeatureTitle" VARCHAR(400),
 	"Amount" INT,
 	"AmountAutomated" INT,
+	"AmountProblem" INT,
 	"Path" TEXT,
 	"Key" TEXT
 );
@@ -30,6 +31,7 @@ TEMPORARY TABLE temp_tree_ids (
 	"AttributeValueId" uuid,
 	"Amount" INT,
 	"AmountAutomated" INT,
+	"AmountProblem" INT,
 	"Order" INT,
 	"Key" TEXT
 );
@@ -46,7 +48,8 @@ as (
 		ft."Id" as "FeatureId", 
 		MIN(ft."Title") as "FeatureTitle",
 		COUNT(DISTINCT ass."Id") as "Amount",
-		COUNT(DISTINCT case when ass."IsAutomated" = TRUE then ass."Id" else NULL end) as "AmountAutomated"
+		COUNT(DISTINCT case when ass."AutomationState" = 1 then ass."Id" else NULL end) as "AmountAutomated",
+		COUNT(DISTINCT case when ass."AutomationState" = 2 then ass."Id" else NULL end) as "AmountProblem"
 	FROM "Feature" ft
 		JOIN "FeatureAttributeValue" ftat on ftat."FeatureId" = ft."Id"
 		JOIN "AttributeValue" attrval on ftat."AttributeValueId" = attrval."Id" 
@@ -66,7 +69,8 @@ as (
 		ft."Id" as "FeatureId", 
 		MIN(ft."Title") as "FeatureTitle",
 		COUNT(DISTINCT ass."Id") as "Amount",
-		COUNT(DISTINCT case when ass."IsAutomated" = TRUE then ass."Id" else NULL end) as "AmountAutomated"
+		COUNT(DISTINCT case when ass."AutomationState" = 1 then ass."Id" else NULL end) as "AmountAutomated",
+		COUNT(DISTINCT case when ass."AutomationState" = 2 then ass."Id" else NULL end) as "AmountProblem"
 	FROM "Feature" ft
 		LEFT JOIN "AssertionGroup" assgrp on assgrp."FeatureId" = ft."Id"
 			LEFT JOIN "Assertion" ass on ass."AssertionGroupId" = assgrp."Id"
@@ -89,6 +93,7 @@ WITH RECURSIVE path_to_feature AS (SELECT tf."TreeId"                           
                                           MAX(tf."FeatureTitle")                           as "FeatureTitle",
                                           SUM(tf."Amount")                                 as "Amount",
                                           SUM(tf."AmountAutomated")                        as "AmountAutomated",
+                                          SUM(tf."AmountProblem")                          as "AmountProblem",
                                           COALESCE(MAX(tf."AttributeValue"), 'ND')         as "Path",
                                           COALESCE(tf."AttributeValueId"::varchar, 'NULL') as "Key"
 
@@ -106,6 +111,7 @@ WITH RECURSIVE path_to_feature AS (SELECT tf."TreeId"                           
                                           tf."FeatureTitle"                                                    as "FeatureTitle",
                                           tf."Amount"                                                          as "Amount",
                                           tf."AmountAutomated"                                                 as "AmountAutomated",
+                                          tf."AmountProblem"                                                   as "AmountProblem",
                                           ptf."Path" || '->' || COALESCE(tf."AttributeValue", 'ND')            as "Path",
                                           ptf."Key" || '.' || COALESCE(tf."AttributeValueId"::varchar, 'NULL') as "Key"
 
@@ -146,6 +152,7 @@ SELECT tids."Id",
        tids."AttributeValueId",
        SUM(ptf."Amount")          as "Amount",
        SUM(ptf."AmountAutomated") as "AmountAutomated",
+       SUM(ptf."AmountProblem")   as "AmountProblem",
        MAX(ptf."Order"),
        tids."Key"
 FROM tree_ids as tids
@@ -157,19 +164,21 @@ FROM "TreeNode"
 WHERE "TreeId" in (SELECT "Id" FROM "Tree" as tree WHERE tree."ProjectId" = "v_ProjectId");
 
 -- Data to insert to TreeNode, тут выбираем уникальные пары и вставляем, соблюдаем порядок от корня к листьям
-INSERT INTO public."TreeNode" ("Id", "ParentId", "TreeId", "Title", "Amount", "AmountAutomated", "SortOrder")
+INSERT INTO public."TreeNode" ("Id", "ParentId", "TreeId", "Title", "Amount", "AmountAutomated", "AmountProblem",
+                               "SortOrder")
 SELECT DISTINCT tids."Id"              as "Id",
                 tids."ParentId"        as "ParentId",
                 tids."TreeId"          as "TreeId",
                 aval."Title"           as "Title",
                 tids."Amount"          as "Amount",
                 tids."AmountAutomated" as "AmountAutomated",
+                tids."AmountProblem"   as "AmountProblem",
                 aval."SortOrder"       as "SortOrder"
 FROM temp_tree_ids as tids
          LEFT JOIN "AttributeValue" as aval on tids."AttributeValueId" = aval."Id";
 
 -- Data to insert to TreeNode, находим самые глубокие узлы связанные с фичами и вставляем
-INSERT INTO public."TreeNode" ("ParentId", "FeatureId", "TreeId", "Title", "Amount", "AmountAutomated")
+INSERT INTO public."TreeNode" ("ParentId", "FeatureId", "TreeId", "Title", "Amount", "AmountAutomated", "AmountProblem")
 SELECT DISTINCT
 ON (ptf."TreeId", ptf."FeatureId", tids."Id")
     tids."Id" as "ParentId",
@@ -177,11 +186,12 @@ ON (ptf."TreeId", ptf."FeatureId", tids."Id")
     ptf."TreeId" as "TreeId",
     ptf."FeatureTitle" as "Title",
     ptf."Amount" as "Amount",
-    ptf."AmountAutomated" as "AmountAutomated"
+    ptf."AmountAutomated" as "AmountAutomated",
+    ptf."AmountProblem" as "AmountProblem"
 FROM temp_tree_ids as tids
     JOIN (
     SELECT
-    "Key", "TreeId", "FeatureId", MAX ("FeatureTitle") as "FeatureTitle", MAX ("Amount") as "Amount", MAX ("AmountAutomated") as "AmountAutomated", MAX ("Order") as "Order"
+    "Key", "TreeId", "FeatureId", MAX ("FeatureTitle") as "FeatureTitle", MAX ("Amount") as "Amount", MAX ("AmountAutomated") as "AmountAutomated", MAX ("AmountProblem") as "AmountProblem", MAX ("Order") as "Order"
     FROM temp_path_to_feature
     GROUP BY "TreeId", "FeatureId", "Key"
     ) as ptf
