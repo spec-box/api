@@ -11,9 +11,6 @@ public class Assertion
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
 
-    [Obsolete("используйте поле AutomationState")]
-    public bool IsAutomated { get; set; }
-
     public AutomationState AutomationState { get; set; }
 
     public Guid AssertionGroupId { get; set; }

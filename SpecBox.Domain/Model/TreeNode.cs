@@ -10,6 +10,7 @@ public class TreeNode
     public string? Title { get; set; }
     public int Amount { get; set; }
     public int AmountAutomated { get; set; }
+    public int AmountProblem { get; set; }
     public int? SortOrder { get; set; }
 
     public Guid? FeatureId { get; set; } = null!;
