@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using SpecBox.Domain.Model.Enums;
 
 namespace SpecBox.Domain.Model;
 
@@ -6,10 +7,14 @@ namespace SpecBox.Domain.Model;
 public class Assertion
 {
     public Guid Id { get; set; }
-    
+
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
+
+    [Obsolete("используйте поле AutomationState")]
     public bool IsAutomated { get; set; }
+
+    public AutomationState AutomationState { get; set; }
 
     public Guid AssertionGroupId { get; set; }
     public AssertionGroup AssertionGroup { get; set; } = null!;

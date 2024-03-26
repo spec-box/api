@@ -15,6 +15,7 @@ public class TreeNodeModel
     [Required] public int TotalCount { get; set; }
 
     [Required] public int AutomatedCount { get; set; }
+    [Required] public int ProblemCount { get; set; }
 
     public int? SortOrder { get; set; }
 }
