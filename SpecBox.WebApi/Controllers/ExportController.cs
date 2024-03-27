@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.Domain.BulkCopy;
 using SpecBox.Domain.Model;
+using SpecBox.Domain.Model.Enums;
 using SpecBox.WebApi.Model.Upload;
 using Attribute = SpecBox.Domain.Model.Attribute;
 
@@ -28,7 +29,7 @@ public class ExportController : Controller
 
         // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
-        
+
         // экспорт атрибутов и значений
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
@@ -186,7 +187,12 @@ public class ExportController : Controller
             // экспорт фичей
             foreach (var feature in data.Features)
             {
-                await featureWriter.AddFeature(export.Id, feature.Code, feature.Title, feature.Description,
+                await featureWriter.AddFeature(
+                    export.Id,
+                    feature.Code,
+                    feature.Title,
+                    feature.Description,
+                    feature.FeatureType,
                     feature.FilePath);
             }
 
@@ -202,12 +208,18 @@ public class ExportController : Controller
                 {
                     foreach (var assertion in group.Assertions)
                     {
+                        var automationState = assertion.AutomationState ??
+                                              (assertion.IsAutomated == true
+                                                  ? AutomationState.Automated
+                                                  : AutomationState.Unknown);
+
                         await assertionWriter.AddAssertion(
                             export.Id,
                             feature.Code,
                             group.Title,
                             assertion.Title,
-                            assertion.Description, assertion.IsAutomated);
+                            assertion.Description,
+                            automationState);
                     }
                 }
             }
@@ -221,7 +233,7 @@ public class ExportController : Controller
             foreach (var feature in data.Features)
             {
                 if (feature.Attributes == null) continue;
-                
+
                 foreach (var attribute in feature.Attributes)
                 {
                     var attributeCode = attribute.Key;
@@ -259,7 +271,8 @@ public class ExportController : Controller
             ProjectId = projectId,
             Timestamp = DateTime.UtcNow,
             TotalCount = allAssertions.Length,
-            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
+            AutomatedCount = allAssertions.Count(a => a.AutomationState == AutomationState.Automated),
+            ProblemCount = allAssertions.Count(a => a.AutomationState == AutomationState.Problem),
         };
 
         db.AssertionsStat.Add(statRecord);

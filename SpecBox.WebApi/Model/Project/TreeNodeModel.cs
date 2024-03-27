@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SpecBox.Domain.Model.Enums;
 
 namespace SpecBox.WebApi.Model.Project;
 
@@ -9,6 +10,8 @@ public class TreeNodeModel
     public Guid? ParentId { get; set; }
 
     public string? FeatureCode { get; set; } = null!;
+    
+    public FeatureType? FeatureType { get; set; }
 
     public string? Title { get; set; }
 

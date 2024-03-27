@@ -78,12 +78,14 @@ public class ProjectController : Controller
             {
                 Id = f.Id,
                 Title = f.Title,
+                FeatureCode = f.Code,
+                FeatureType = f.FeatureType,
                 TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
                 AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
                     .Count(a => a.AutomationState == AutomationState.Automated),
                 ProblemCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
                     .Count(a => a.AutomationState == AutomationState.Problem),
-                FeatureCode = f.Code,
+                
             })
             .ToArrayAsync();
 
@@ -101,7 +103,9 @@ public class ProjectController : Controller
                 Title = n.Title,
                 TotalCount = n.Amount,
                 AutomatedCount = n.AmountAutomated,
+                ProblemCount = n.AmountProblem,
                 FeatureCode = n.Feature == null ? null : n.Feature.Code,
+                FeatureType = n.Feature == null ? null : n.Feature.FeatureType,
                 SortOrder = n.SortOrder,
             })
             .ToArrayAsync();
