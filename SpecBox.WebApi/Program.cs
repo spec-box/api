@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using SpecBox.Domain;
+using SpecBox.WebApi.Lib;
 using SpecBox.WebApi.Lib.Logging;
 using SpecBox.WebApi.Model;
 
@@ -26,6 +27,7 @@ builder.Services.AddSwaggerGen(opts =>
     opts.CustomOperationIds(a => a.RelativePath);
     opts.CustomSchemaIds(a => a.FullName);
     opts.SupportNonNullableReferenceTypes();
+    opts.SchemaFilter<AutoRestSchemaFilter>();
 });
 
 builder.Logging

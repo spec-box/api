@@ -22,7 +22,7 @@ BEGIN
     (
         code        varchar not null,
         title       varchar not null,
-		featureType integer,
+        featureType integer,
         description varchar,
         filePath    varchar
     ) ON COMMIT DROP;

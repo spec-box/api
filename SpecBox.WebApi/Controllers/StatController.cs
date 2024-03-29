@@ -62,6 +62,7 @@ public class StatController : Controller
                 assertion.ProjectId == project.Id &&
                 assertion.Timestamp >= from &&
                 assertion.Timestamp < to)
+            .OrderBy(s => s.Timestamp)
             .ToArrayAsync();
         
         var autotests = await db.AutotestsStat
@@ -69,6 +70,7 @@ public class StatController : Controller
                 assertion.ProjectId == project.Id &&
                 assertion.Timestamp >= from &&
                 assertion.Timestamp < to)
+            .OrderBy(s => s.Timestamp)
             .ToArrayAsync();
 
         var model = new StatModel

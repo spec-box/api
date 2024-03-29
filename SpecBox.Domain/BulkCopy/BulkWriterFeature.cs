@@ -13,6 +13,16 @@ public class BulkWriterFeature : BulkWriter
     {
     }
 
+    private int? ToNullableInt32(FeatureType? featureType)
+    {
+        if (featureType.HasValue)
+        {
+            return Convert.ToInt32(featureType.Value);
+        }
+
+        return null;
+    }
+
     public async Task AddFeature(
         Guid exportId,
         string code,
@@ -26,7 +36,7 @@ public class BulkWriterFeature : BulkWriter
         await Writer.WriteAsync(code, NpgsqlDbType.Text);
         await Writer.WriteAsync(title, NpgsqlDbType.Text);
         await Writer.WriteAsync(description, NpgsqlDbType.Text);
-        await Writer.WriteAsync(featureType, NpgsqlDbType.Integer);
+        await Writer.WriteAsync(ToNullableInt32(featureType), NpgsqlDbType.Integer);
         await Writer.WriteAsync(filePath, NpgsqlDbType.Text);
     }
 }

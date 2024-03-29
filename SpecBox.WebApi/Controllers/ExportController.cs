@@ -208,18 +208,13 @@ public class ExportController : Controller
                 {
                     foreach (var assertion in group.Assertions)
                     {
-                        var automationState = assertion.AutomationState ??
-                                              (assertion.IsAutomated == true
-                                                  ? AutomationState.Automated
-                                                  : AutomationState.Unknown);
-
                         await assertionWriter.AddAssertion(
                             export.Id,
                             feature.Code,
                             group.Title,
                             assertion.Title,
                             assertion.Description,
-                            automationState);
+                            GetAutomationState(assertion));
                     }
                 }
             }
@@ -257,12 +252,21 @@ public class ExportController : Controller
         await db.MergeExportedData(export.Id);
     }
 
+    private AutomationState GetAutomationState(AssertionModel assertion)
+    {
+        return assertion.AutomationState ??
+               (assertion.IsAutomated == true
+                   ? AutomationState.Automated
+                   : AutomationState.Unknown);
+    }
+
     private async Task WriteStat(Guid projectId, UploadData data)
     {
         // stat
-        var allAssertions = data.Features
+        var assertionsState = data.Features
             .SelectMany(f => f.Groups)
             .SelectMany(gr => gr.Assertions)
+            .Select(GetAutomationState)
             .ToArray();
 
         var statRecord = new AssertionsStatRecord
@@ -270,9 +274,9 @@ public class ExportController : Controller
             Id = Guid.NewGuid(),
             ProjectId = projectId,
             Timestamp = DateTime.UtcNow,
-            TotalCount = allAssertions.Length,
-            AutomatedCount = allAssertions.Count(a => a.AutomationState == AutomationState.Automated),
-            ProblemCount = allAssertions.Count(a => a.AutomationState == AutomationState.Problem),
+            TotalCount = assertionsState.Length,
+            AutomatedCount = assertionsState.Count(a => a == AutomationState.Automated),
+            ProblemCount = assertionsState.Count(a => a == AutomationState.Problem),
         };
 
         db.AssertionsStat.Add(statRecord);
