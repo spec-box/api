@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
+using SpecBox.Domain.Model.Enums;
 using SpecBox.WebApi.Model.Common;
 using SpecBox.WebApi.Model.Project;
 
@@ -55,7 +56,7 @@ public class ProjectController : Controller
         var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id);
 
         var projectModel = mapper.Map<Project, ProjectModel>(prj);
-        
+
         var nodes = tree == null
             ? await GetDefaultTreeModel(project)
             : await GetTreeModel(tree);
@@ -77,9 +78,14 @@ public class ProjectController : Controller
             {
                 Id = f.Id,
                 Title = f.Title,
-                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(a => a.IsAutomated),
                 FeatureCode = f.Code,
+                FeatureType = f.FeatureType,
+                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Automated),
+                ProblemCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Problem),
+                
             })
             .ToArrayAsync();
 
@@ -97,7 +103,9 @@ public class ProjectController : Controller
                 Title = n.Title,
                 TotalCount = n.Amount,
                 AutomatedCount = n.AmountAutomated,
+                ProblemCount = n.AmountProblem,
                 FeatureCode = n.Feature == null ? null : n.Feature.Code,
+                FeatureType = n.Feature == null ? null : n.Feature.FeatureType,
                 SortOrder = n.SortOrder,
             })
             .ToArrayAsync();

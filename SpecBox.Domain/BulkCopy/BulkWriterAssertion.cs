@@ -1,12 +1,13 @@
 using Npgsql;
 using NpgsqlTypes;
+using SpecBox.Domain.Model.Enums;
 
 namespace SpecBox.Domain.BulkCopy;
 
 public class BulkWriterAssertion : BulkWriter
 {
     private const string COMMAND =
-        "COPY \"ExportAssertion\" (\"ExportId\", \"FeatureCode\",\"GroupTitle\",\"Title\",\"Description\", \"IsAutomated\") FROM STDIN (FORMAT BINARY)";
+        "COPY \"ExportAssertion\" (\"ExportId\", \"FeatureCode\",\"GroupTitle\",\"Title\",\"Description\", \"AutomationState\") FROM STDIN (FORMAT BINARY)";
 
     public BulkWriterAssertion(NpgsqlConnection connection) : base(COMMAND, connection)
     {
@@ -18,7 +19,7 @@ public class BulkWriterAssertion : BulkWriter
         string groupTitle,
         string title,
         string? description,
-        bool isAutomated)
+        AutomationState automationState)
     {
         await Writer.StartRowAsync();
         await Writer.WriteAsync(exportId, NpgsqlDbType.Uuid);
@@ -26,6 +27,6 @@ public class BulkWriterAssertion : BulkWriter
         await Writer.WriteAsync(groupTitle, NpgsqlDbType.Text);
         await Writer.WriteAsync(title, NpgsqlDbType.Text);
         await Writer.WriteAsync(description, NpgsqlDbType.Text);
-        await Writer.WriteAsync(isAutomated, NpgsqlDbType.Boolean);
+        await Writer.WriteAsync(Convert.ToInt32(automationState), NpgsqlDbType.Integer);
     }
 }

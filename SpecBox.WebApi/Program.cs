@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using SpecBox.Domain;
+using SpecBox.WebApi.Lib;
 using SpecBox.WebApi.Lib.Logging;
 using SpecBox.WebApi.Model;
 
@@ -11,9 +12,10 @@ string? cstring = builder.Configuration.GetConnectionString("default");
 builder.Services.AddDbContext<SpecBoxDbContext>(cfg => cfg.UseNpgsql(cstring));
 
 builder.Services.AddControllers()
-    .AddJsonOptions(option =>
+    .AddJsonOptions(options =>
     {
-        option.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -25,6 +27,7 @@ builder.Services.AddSwaggerGen(opts =>
     opts.CustomOperationIds(a => a.RelativePath);
     opts.CustomSchemaIds(a => a.FullName);
     opts.SupportNonNullableReferenceTypes();
+    opts.SchemaFilter<AutoRestSchemaFilter>();
 });
 
 builder.Logging

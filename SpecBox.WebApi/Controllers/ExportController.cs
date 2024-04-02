@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SpecBox.Domain;
 using SpecBox.Domain.BulkCopy;
 using SpecBox.Domain.Model;
+using SpecBox.Domain.Model.Enums;
 using SpecBox.WebApi.Model.Upload;
 using Attribute = SpecBox.Domain.Model.Attribute;
 
@@ -28,7 +29,7 @@ public class ExportController : Controller
 
         // получаем проект из БД
         var prj = await db.Projects.SingleAsync(p => p.Code == projectCode);
-        
+
         // экспорт атрибутов и значений
         var attributes = await db.Attributes.Where(a => a.ProjectId == prj.Id).ToListAsync();
         var values = await db.AttributeValues
@@ -186,7 +187,12 @@ public class ExportController : Controller
             // экспорт фичей
             foreach (var feature in data.Features)
             {
-                await featureWriter.AddFeature(export.Id, feature.Code, feature.Title, feature.Description,
+                await featureWriter.AddFeature(
+                    export.Id,
+                    feature.Code,
+                    feature.Title,
+                    feature.Description,
+                    feature.FeatureType,
                     feature.FilePath);
             }
 
@@ -207,7 +213,8 @@ public class ExportController : Controller
                             feature.Code,
                             group.Title,
                             assertion.Title,
-                            assertion.Description, assertion.IsAutomated);
+                            assertion.Description,
+                            GetAutomationState(assertion));
                     }
                 }
             }
@@ -221,7 +228,7 @@ public class ExportController : Controller
             foreach (var feature in data.Features)
             {
                 if (feature.Attributes == null) continue;
-                
+
                 foreach (var attribute in feature.Attributes)
                 {
                     var attributeCode = attribute.Key;
@@ -245,12 +252,21 @@ public class ExportController : Controller
         await db.MergeExportedData(export.Id);
     }
 
+    private AutomationState GetAutomationState(AssertionModel assertion)
+    {
+        return assertion.AutomationState ??
+               (assertion.IsAutomated == true
+                   ? AutomationState.Automated
+                   : AutomationState.Unknown);
+    }
+
     private async Task WriteStat(Guid projectId, UploadData data)
     {
         // stat
-        var allAssertions = data.Features
+        var assertionsState = data.Features
             .SelectMany(f => f.Groups)
             .SelectMany(gr => gr.Assertions)
+            .Select(GetAutomationState)
             .ToArray();
 
         var statRecord = new AssertionsStatRecord
@@ -258,8 +274,9 @@ public class ExportController : Controller
             Id = Guid.NewGuid(),
             ProjectId = projectId,
             Timestamp = DateTime.UtcNow,
-            TotalCount = allAssertions.Length,
-            AutomatedCount = allAssertions.Count(a => a.IsAutomated)
+            TotalCount = assertionsState.Length,
+            AutomatedCount = assertionsState.Count(a => a == AutomationState.Automated),
+            ProblemCount = assertionsState.Count(a => a == AutomationState.Problem),
         };
 
         db.AssertionsStat.Add(statRecord);
