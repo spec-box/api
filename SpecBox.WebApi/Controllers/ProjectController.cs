@@ -39,8 +39,8 @@ public class ProjectController : Controller
     public IActionResult Feature(string project, string feature)
     {
         var f = db.Features
-            .Include(f => f.AssertionGroups)
-            .ThenInclude(g => g.Assertions)
+            .Include(f => f.AssertionGroups.OrderBy(g => g.SortOrder))
+            .ThenInclude(g => g.Assertions.OrderBy(a => a.SortOrder))
             .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
 
         var model = mapper.Map<FeatureModel>(f);
