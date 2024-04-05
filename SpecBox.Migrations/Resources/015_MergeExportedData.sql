@@ -59,12 +59,13 @@ BEGIN
     (
         featureId   uuid    not null,
         featureCode varchar not null,
-        title       varchar not null
+        title       varchar not null,
+        sortOrder   integer
     ) ON COMMIT DROP;
 
     -- заполняем данными временную таблицу групп
-    INSERT INTO tmp_group (featureId, featureCode, title)
-    SELECT f."Id", ea."FeatureCode", ea."GroupTitle"
+    INSERT INTO tmp_group (featureId, featureCode, title, sortOrder)
+    SELECT f."Id", ea."FeatureCode", ea."GroupTitle", MAX(ea."GroupSortOrder")
     FROM public."ExportAssertion" ea
              JOIN public."Feature" f ON ea."FeatureCode" = f."Code" AND f."ProjectId" = projectId
     WHERE ea."ExportId" = exportId
@@ -77,9 +78,12 @@ BEGIN
     MERGE INTO public."AssertionGroup" gr
     USING tmp_group t
     ON gr."FeatureId" = t.featureId AND gr."Title" = t.title
+    WHEN MATCHED THEN
+        UPDATE
+            SET "SortOrder" = t.sortOrder
     WHEN NOT MATCHED THEN
-        INSERT ("FeatureId", "Title")
-        VALUES (t.featureId, t.title);
+        INSERT ("FeatureId", "Title", "SortOrder")
+        VALUES (t.featureId, t.title, t.sortOrder);
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'added groups: %', rowsCount;
@@ -91,12 +95,13 @@ BEGIN
         groupId     uuid    not null,
         title       varchar not null,
         description varchar,
-		automationState integer not null
+        sortOrder   integer,
+        automationState integer not null
     ) ON COMMIT DROP;
 
     -- заполняем данными временную таблицу утверждений
-    INSERT INTO tmp_assertion (groupId, title, description, automationState)
-    SELECT gr."Id", ea."Title", ea."Description", ea."AutomationState"
+    INSERT INTO tmp_assertion (groupId, title, description, sortOrder, automationState)
+    SELECT gr."Id", ea."Title", ea."Description", ea."SortOrder", ea."AutomationState"
     FROM public."ExportAssertion" ea
              JOIN public."AssertionGroup" gr ON gr."Title" = ea."GroupTitle"
              JOIN public."Feature" f
@@ -113,10 +118,11 @@ BEGIN
     WHEN MATCHED THEN
         UPDATE
         SET "Description" = t.description,
-            "AutomationState" = t.automationState
+            "AutomationState" = t.automationState,
+            "SortOrder" = t.sortOrder
     WHEN NOT MATCHED THEN
-        INSERT ("AssertionGroupId", "Title", "Description", "AutomationState")
-        VALUES (t.groupId, t.title, t.description, t.automationState);
+        INSERT ("AssertionGroupId", "Title", "Description", "SortOrder", "AutomationState")
+        VALUES (t.groupId, t.title, t.description, t.sortOrder, t.automationState);
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'updated assertions: %', rowsCount;
