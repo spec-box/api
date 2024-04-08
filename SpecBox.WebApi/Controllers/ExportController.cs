@@ -204,18 +204,28 @@ public class ExportController : Controller
         {
             foreach (var feature in data.Features)
             {
+                var groupSortOrder = 0;
+
                 foreach (var group in feature.Groups)
                 {
+                    var assertionSortOrder = 0;
+
                     foreach (var assertion in group.Assertions)
                     {
                         await assertionWriter.AddAssertion(
                             export.Id,
                             feature.Code,
                             group.Title,
+                            groupSortOrder,
                             assertion.Title,
                             assertion.Description,
+                            assertionSortOrder,
                             GetAutomationState(assertion));
+
+                        assertionSortOrder++;
                     }
+
+                    groupSortOrder++;
                 }
             }
 
