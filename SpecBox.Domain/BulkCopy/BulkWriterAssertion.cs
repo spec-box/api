@@ -27,10 +27,10 @@ public class BulkWriterAssertion : BulkWriter
         await Writer.WriteAsync(exportId, NpgsqlDbType.Uuid);
         await Writer.WriteAsync(featureCode, NpgsqlDbType.Text);
         await Writer.WriteAsync(groupTitle, NpgsqlDbType.Text);
-        await Writer.WriteAsync(groupSortOrder, NpgsqlDbType.Integer);
+        await WriteNullableInt32(groupSortOrder);
         await Writer.WriteAsync(title, NpgsqlDbType.Text);
         await Writer.WriteAsync(description, NpgsqlDbType.Text);
-        await Writer.WriteAsync(sortOrder, NpgsqlDbType.Integer);
+        await WriteNullableInt32(sortOrder);
         await Writer.WriteAsync(Convert.ToInt32(automationState), NpgsqlDbType.Integer);
     }
 }

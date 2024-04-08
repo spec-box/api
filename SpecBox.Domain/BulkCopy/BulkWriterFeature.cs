@@ -36,7 +36,7 @@ public class BulkWriterFeature : BulkWriter
         await Writer.WriteAsync(code, NpgsqlDbType.Text);
         await Writer.WriteAsync(title, NpgsqlDbType.Text);
         await Writer.WriteAsync(description, NpgsqlDbType.Text);
-        await Writer.WriteAsync(ToNullableInt32(featureType), NpgsqlDbType.Integer);
+        await WriteNullableInt32(ToNullableInt32(featureType));
         await Writer.WriteAsync(filePath, NpgsqlDbType.Text);
     }
 }
