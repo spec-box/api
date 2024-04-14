@@ -10,6 +10,8 @@ public class Export
     public Guid ProjectId { get; set; }
     
     public Project Project { get; set; } = null!;
-
+    
     public DateTime Timestamp { get; set; }
+    
+    public string? Message { get; set; }
 }

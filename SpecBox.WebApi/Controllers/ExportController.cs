@@ -199,6 +199,26 @@ public class ExportController : Controller
             await featureWriter.CompleteAsync();
         }
 
+        // экспорт зависимостей
+        await using (var dependencyWriter = connection.CreateFeatureDependencyWriter())
+        {
+            // экспорт фичей
+            foreach (var feature in data.Features)
+            {
+                if (feature.Dependencies == null) continue;
+
+                foreach (var dependencyCode in feature.Dependencies)
+                {
+                    await dependencyWriter.AddFeatureDependency(
+                        export.Id,
+                        feature.Code,
+                        dependencyCode);
+                }
+            }
+
+            await dependencyWriter.CompleteAsync();
+        }
+
         // экспорт утверждений
         await using (var assertionWriter = connection.CreateAssertionWriter())
         {
