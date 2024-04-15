@@ -3,12 +3,12 @@ CREATE OR REPLACE PROCEDURE public."MergeExportedData"(exportId uuid)
 AS
 $$
 DECLARE
-    projectId uuid;
+    currentProjectId uuid;
     rowsCount integer;
 BEGIN
     -- ## ID ПРОЕКТА
     SELECT "ProjectId"
-    INTO projectId
+    INTO currentProjectId
     FROM public."Export"
     WHERE "Id" = exportId;
 
@@ -39,7 +39,7 @@ BEGIN
     -- обновляем таблицу фичей
     MERGE INTO public."Feature" f
     USING tmp_feature t
-    ON f."Code" = t.code AND f."ProjectId" = projectId
+    ON f."Code" = t.code AND f."ProjectId" = currentProjectId
     WHEN MATCHED THEN
         UPDATE
         SET "Title"       = t.title,
@@ -48,11 +48,42 @@ BEGIN
             "FilePath"    = t.filePath
     WHEN NOT MATCHED THEN
         INSERT ("ProjectId", "Code", "Title", "FeatureType", "Description", "FilePath")
-        VALUES (projectId, t.code, t.title, t.featureType, t.description, t.filePath);
+        VALUES (currentProjectId, t.code, t.title, t.featureType, t.description, t.filePath);
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'updated features: %', rowsCount;
 
+    -- ## ЭКСПОРТ ЗАВИСИМОСТЕЙ ФИЧЕЙ
+    -- создаем временную таблицу зависимостей
+    CREATE TEMPORARY TABLE tmp_dependency
+    (
+        sourceCode      varchar not null,
+        sourceId        uuid    not null,
+        dependencyCode  varchar not null,
+        dependencyId    uuid    not null
+    ) ON COMMIT DROP;
+
+    -- заполняем данными временную таблицу зависимостей
+    INSERT INTO tmp_dependency (sourceCode, sourceId, dependencyCode, dependencyId)
+    SELECT d."SourceFeatureCode", fs."Id", d."DependencyFeatureCode", fd."Id"
+    from public."ExportFeatureDependency" d
+             left outer join public."Feature" fs 
+                 on fs."Code" = d."SourceFeatureCode" AND fs."ProjectId" = currentProjectId
+             left outer join public."Feature" fd
+                 on fd."Code" = d."DependencyFeatureCode" AND fd."ProjectId" = currentProjectId
+    WHERE "ExportId" = exportId;
+
+    -- добавляем недостающие значения в таблицу зависимостей
+    MERGE INTO public."FeatureDependency" fd
+    USING tmp_dependency t
+    ON fd."SourceFeatureId" = t.sourceId AND fd."DependencyFeatureId" = t.dependencyId
+    WHEN NOT MATCHED THEN
+        INSERT ("SourceFeatureId", "DependencyFeatureId")
+        VALUES (t.sourceId, t.dependencyId);
+    
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'added dependencies: %', rowsCount;
+    
     -- ## ЭКСПОРТ ГРУПП
     -- создаем временную таблицу групп
     CREATE TEMPORARY TABLE tmp_group
@@ -67,7 +98,7 @@ BEGIN
     INSERT INTO tmp_group (featureId, featureCode, title, sortOrder)
     SELECT f."Id", ea."FeatureCode", ea."GroupTitle", MAX(ea."GroupSortOrder")
     FROM public."ExportAssertion" ea
-             JOIN public."Feature" f ON ea."FeatureCode" = f."Code" AND f."ProjectId" = projectId
+             JOIN public."Feature" f ON ea."FeatureCode" = f."Code" AND f."ProjectId" = currentProjectId
     WHERE ea."ExportId" = exportId
     GROUP BY f."Id", ea."FeatureCode", ea."GroupTitle";
 
@@ -105,7 +136,7 @@ BEGIN
     FROM public."ExportAssertion" ea
              JOIN public."AssertionGroup" gr ON gr."Title" = ea."GroupTitle"
              JOIN public."Feature" f
-                  ON gr."FeatureId" = f."Id" AND f."Code" = ea."FeatureCode" AND f."ProjectId" = projectId
+                  ON gr."FeatureId" = f."Id" AND f."Code" = ea."FeatureCode" AND f."ProjectId" = currentProjectId
     WHERE ea."ExportId" = exportId;
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
@@ -140,8 +171,8 @@ BEGIN
     INSERT INTO tmp_feature_attribute (featureId, attributeId, attributeValueCode)
     SELECT f."Id" as featureId, a."Id" attributeId, fa."AttributeValueCode" as attributeValueCode
     FROM public."ExportFeatureAttribute" fa
-             JOIN public."Feature" f ON f."Code" = fa."FeatureCode" AND f."ProjectId" = projectId
-             JOIN public."Attribute" a ON a."Code" = fa."AttributeCode" AND a."ProjectId" = projectId
+             JOIN public."Feature" f ON f."Code" = fa."FeatureCode" AND f."ProjectId" = currentProjectId
+             JOIN public."Attribute" a ON a."Code" = fa."AttributeCode" AND a."ProjectId" = currentProjectId
     WHERE fa."ExportId" = exportId;
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
@@ -180,14 +211,14 @@ BEGIN
     FROM public."TreeNode" tn
         USING public."Feature" f
     WHERE tn."FeatureId" = f."Id"
-      AND f."ProjectId" = projectId;
+      AND f."ProjectId" = currentProjectId;
 
     -- удаляем неактуальные связи фичей со значениями атрибутов
     DELETE
     FROM public."FeatureAttributeValue"
         USING public."FeatureAttributeValue" fav
             INNER JOIN public."Feature" f
-            ON fav."FeatureId" = f."Id" AND f."ProjectId" = projectId
+            ON fav."FeatureId" = f."Id" AND f."ProjectId" = currentProjectId
             JOIN public."AttributeValue" av ON fav."AttributeValueId" = av."Id"
             LEFT OUTER JOIN tmp_feature_attribute t
             ON fav."FeatureId" = t.featureId AND av."AttributeId" = t.attributeId AND av."Code" = t.attributeValueCode
@@ -202,7 +233,7 @@ BEGIN
     DELETE
     FROM public."AttributeValue"
         USING public."AttributeValue" av
-            INNER JOIN public."Attribute" a ON av."AttributeId" = a."Id" AND a."ProjectId" = projectId
+            INNER JOIN public."Attribute" a ON av."AttributeId" = a."Id" AND a."ProjectId" = currentProjectId
             LEFT OUTER JOIN public."FeatureAttributeValue" fav ON av."Id" = fav."AttributeValueId"
     WHERE public."AttributeValue"."Id" = av."Id"
       AND fav."AttributeValueId" IS NULL;
@@ -217,7 +248,7 @@ BEGIN
             INNER JOIN public."AssertionGroup" gr
             ON a."AssertionGroupId" = gr."Id"
             INNER JOIN public."Feature" f
-            ON gr."FeatureId" = f."Id" AND f."ProjectId" = projectId
+            ON gr."FeatureId" = f."Id" AND f."ProjectId" = currentProjectId
             LEFT OUTER JOIN tmp_assertion t
             ON a."AssertionGroupId" = t.groupId AND a."Title" = t.title
     WHERE public."Assertion"."Id" = a."Id"
@@ -231,7 +262,7 @@ BEGIN
     FROM public."AssertionGroup"
         USING public."AssertionGroup" gr
             INNER JOIN public."Feature" f
-            ON gr."FeatureId" = f."Id" AND f."ProjectId" = projectId
+            ON gr."FeatureId" = f."Id" AND f."ProjectId" = currentProjectId
             LEFT OUTER JOIN tmp_group t
             ON gr."FeatureId" = t.featureId AND gr."Title" = t.title
     WHERE public."AssertionGroup"."Id" = gr."Id"
@@ -240,6 +271,21 @@ BEGIN
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'deleted groups: %', rowsCount;
 
+    -- удаляем неактуальные зависимости
+    DELETE
+    FROM public."FeatureDependency"
+        USING public."FeatureDependency" fd
+            INNER JOIN public."Feature" f
+            ON fd."SourceFeatureId" = f."Id" AND f."ProjectId" = currentProjectId
+            LEFT OUTER JOIN tmp_dependency d
+            ON fd."SourceFeatureId" = d.sourceId AND fd."DependencyFeatureId" = d.dependencyId
+    WHERE public."FeatureDependency"."SourceFeatureId" = fd."SourceFeatureId"
+      AND public."FeatureDependency"."DependencyFeatureId" = fd."DependencyFeatureId"
+      AND d.sourceId IS NULL;
+
+    GET DIAGNOSTICS rowsCount = ROW_COUNT;
+    RAISE NOTICE 'deleted dependencies: %', rowsCount;
+
     -- удаляем неактуальные фичи
     DELETE
     FROM public."Feature"
@@ -247,7 +293,7 @@ BEGIN
             LEFT OUTER JOIN tmp_feature t
             ON f."Code" = t.code
     WHERE public."Feature"."Id" = f."Id"
-      AND f."ProjectId" = projectId
+      AND f."ProjectId" = currentProjectId
       AND t.code IS NULL;
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
