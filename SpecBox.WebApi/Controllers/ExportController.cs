@@ -174,7 +174,8 @@ public class ExportController : Controller
     private async Task RunExport(Project project, UploadData data)
     {
         // добавляем новый экспорт
-        var export = new Export { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow };
+        var export = new Export
+            { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow, Message = data.Message };
 
         db.Exports.Add(export);
         await db.SaveChangesAsync();
