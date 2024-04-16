@@ -18,4 +18,9 @@ public static class BulkWriterExtensions
     {
         return new BulkWriterFeatureAttribute(connection);
     }
+
+    public static BulkWriterFeatureDependency CreateFeatureDependencyWriter(this NpgsqlConnection connection)
+    {
+        return new BulkWriterFeatureDependency(connection);
+    }
 }

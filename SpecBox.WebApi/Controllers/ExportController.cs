@@ -174,7 +174,8 @@ public class ExportController : Controller
     private async Task RunExport(Project project, UploadData data)
     {
         // добавляем новый экспорт
-        var export = new Export { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow };
+        var export = new Export
+            { Id = Guid.NewGuid(), Project = project, Timestamp = DateTime.UtcNow, Message = data.Message };
 
         db.Exports.Add(export);
         await db.SaveChangesAsync();
@@ -197,6 +198,26 @@ public class ExportController : Controller
             }
 
             await featureWriter.CompleteAsync();
+        }
+
+        // экспорт зависимостей
+        await using (var dependencyWriter = connection.CreateFeatureDependencyWriter())
+        {
+            // экспорт фичей
+            foreach (var feature in data.Features)
+            {
+                if (feature.Dependencies == null) continue;
+
+                foreach (var dependencyCode in feature.Dependencies)
+                {
+                    await dependencyWriter.AddFeatureDependency(
+                        export.Id,
+                        feature.Code,
+                        dependencyCode);
+                }
+            }
+
+            await dependencyWriter.CompleteAsync();
         }
 
         // экспорт утверждений
