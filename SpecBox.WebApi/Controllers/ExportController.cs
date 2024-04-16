@@ -5,6 +5,7 @@ using SpecBox.Domain.BulkCopy;
 using SpecBox.Domain.Model;
 using SpecBox.Domain.Model.Enums;
 using SpecBox.WebApi.Model.Upload;
+
 using Attribute = SpecBox.Domain.Model.Attribute;
 
 namespace SpecBox.WebApi.Controllers;
@@ -206,7 +207,12 @@ public class ExportController : Controller
             // экспорт фичей
             foreach (var feature in data.Features)
             {
-                if (feature.Dependencies == null) continue;
+                logger.LogInformation("process feature: {Code}", feature);
+                if (feature.Dependencies == null)
+                {
+                    logger.LogInformation("empty dependecies! feature: {Code}", feature.Code);
+                    continue;
+                }
 
                 foreach (var dependencyCode in feature.Dependencies)
                 {

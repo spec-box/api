@@ -78,8 +78,8 @@ BEGIN
     USING tmp_dependency t
     ON fd."SourceFeatureId" = t.sourceId AND fd."DependencyFeatureId" = t.dependencyId
     WHEN NOT MATCHED THEN
-        INSERT ("SourceFeatureId", "DependencyFeatureId")
-        VALUES (t.sourceId, t.dependencyId);
+        INSERT ("SourceFeatureId", "SourceFeatureCode", ""DependencyFeatureId")
+        VALUES (t.sourceId, t.sourceCode, t.dependencyId, t.dependencyCode);
     
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'added dependencies: %', rowsCount;

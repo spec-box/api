@@ -43,6 +43,9 @@ public class ProjectController : Controller
             .ThenInclude(g => g.Assertions.OrderBy(a => a.SortOrder))
             .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
 
+        var deps = db.FeatureDependencies.SingleOrDefault(d => d.SourceFeatureId == f.Id);
+        logger.LogInformation("Deps: {}", deps);
+        
         var model = mapper.Map<FeatureModel>(f);
 
         return Json(model);
