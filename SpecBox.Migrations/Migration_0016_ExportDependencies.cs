@@ -31,8 +31,8 @@ public class Migration_0016_ExportDependencies : Migration
         Database.AddColumn("Export", new Column("Message", DbType.String.WithSize(int.MaxValue), ColumnProperty.Null));
         
         Database.AddTable("FeatureDependency",
-            new Column("SourceFeatureId", DbType.Guid),
-            new Column("DependencyFeatureId", DbType.Guid)
+            new Column("SourceFeatureId", DbType.Guid, ColumnProperty.PrimaryKey),
+            new Column("DependencyFeatureId", DbType.Guid, ColumnProperty.PrimaryKey)
         );
 
         Database.AddForeignKey(
