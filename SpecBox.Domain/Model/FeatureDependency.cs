@@ -9,4 +9,8 @@ public class FeatureDependency
     public Guid SourceFeatureId { get; set; }
     
     public Guid DependencyFeatureId { get; set; }
+
+    public Feature SourceFeature { get; set; }
+
+    public Feature DependencyFeature { get; set; }
 }

@@ -36,7 +36,7 @@ public class ProjectController : Controller
 
     [HttpGet("{project}/features/{feature}")]
     [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Feature(string project, string feature)
+    public IActionResult Feature(string project, string feature)
     {
         var f = db.Features
             .Include(f => f.AssertionGroups.OrderBy(g => g.SortOrder))
@@ -44,24 +44,22 @@ public class ProjectController : Controller
             .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
 
         var model = mapper.Map<FeatureModel>(f);
-        var deps = await db.FeatureDependencies
+
+        var ds = db.FeatureDependencies
             .Where(d => d.SourceFeatureId == f.Id)
-            .Join(db.Features,
-                d => d.DependencyFeatureId,
-                f => f.Id,
-                (d, f) => new FeatureDependencyModel
-                {
-                    Code = f.Code,
-                    Title = f.Title,
-                    FeatureType = f.FeatureType,
-                    AssertionsCount = 0,
-                    AutomatedCount = 0,
-                }
-            )
-            .ToListAsync();
-        
-        // logger.LogInformation("Deps: {}", deps);
-        model.Dependencies = deps; 
+            .Include(t => t.SourceFeature)
+            .Include(t => t.DependencyFeature)
+            .ToList();
+
+        model.Dependencies = ds.Select(d => new FeatureDependencyModel
+        {
+            Code = d.DependencyFeature.Code,
+            Title = d.DependencyFeature.Title,
+            FeatureType = d.DependencyFeature.FeatureType,
+            AssertionsCount = 0,
+            AutomatedCount = 0,
+            ProblemCount = 0,
+        }).ToList();
         
         return Json(model);
     }

@@ -14,7 +14,7 @@ public class FeatureModel
     public string? Description { get; set; }
 
     public string? FilePath { get; set; }
-    public List<FeatureDependencyModel>? Dependencies { get; set; } = new();
+    [Required] public List<FeatureDependencyModel> Dependencies { get; set; } = new();
 
     [Required] public List<AssertionGroupModel> AssertionGroups { get; } = new();
 }

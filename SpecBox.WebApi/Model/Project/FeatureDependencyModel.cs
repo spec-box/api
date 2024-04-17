@@ -11,7 +11,9 @@ public class FeatureDependencyModel
 
     public FeatureType? FeatureType { get; set; }
 
-    public int AssertionsCount { get; set; }
+    [Required] public int AssertionsCount { get; set; }
     
-    public int AutomatedCount { get; set; }
+    [Required] public int AutomatedCount { get; set; }
+    
+    [Required] public int ProblemCount { get; set; }
 }
