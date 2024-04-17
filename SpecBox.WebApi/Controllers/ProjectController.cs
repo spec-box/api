@@ -47,8 +47,8 @@ public class ProjectController : Controller
 
         var ds = db.FeatureDependencies
             .Where(d => d.SourceFeatureId == f.Id)
-            .Include(t => t.SourceFeature)
             .Include(t => t.DependencyFeature)
+            .Include(t => t.SourceFeature)
             .ToList();
 
         model.Dependencies = ds.Select(d => new FeatureDependencyModel
@@ -56,9 +56,13 @@ public class ProjectController : Controller
             Code = d.DependencyFeature.Code,
             Title = d.DependencyFeature.Title,
             FeatureType = d.DependencyFeature.FeatureType,
-            AssertionsCount = 0,
-            AutomatedCount = 0,
-            ProblemCount = 0,
+            TotalCount = d.DependencyFeature.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+            AutomatedCount = d.DependencyFeature.AssertionGroups
+                .SelectMany(gr => gr.Assertions)
+                .Count(a => a.AutomationState == AutomationState.Automated),
+            ProblemCount = d.DependencyFeature.AssertionGroups
+                .SelectMany(gr => gr.Assertions)
+                .Count(a => a.AutomationState == AutomationState.Problem),
         }).ToList();
         
         return Json(model);
@@ -81,6 +85,45 @@ public class ProjectController : Controller
         {
             Project = projectModel,
             Tree = nodes
+        };
+
+        return Json(model);
+    }
+    
+    [HttpGet("{project}/graph")]
+    [ProducesResponseType(typeof(GraphModel), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Graph(string project)
+    {
+        var nodes = await db.Features
+            .Where(f => f.Project.Code == project)
+            .Select(f => new NodeModel()
+            {
+                Id = f.Id,
+                Title = f.Title,
+                FeatureCode = f.Code,
+                FeatureType = f.FeatureType,
+                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Automated),
+                ProblemCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Problem),
+                
+            })
+            .ToArrayAsync();
+        
+        var edges = await db.FeatureDependencies
+            // TO DO filter by projectCode (add ProjectId to FeatureDependencies?)
+            .Select(fd => new EdgeModel()
+            {
+                SourceId = fd.SourceFeatureId,
+                TargetId = fd.DependencyFeatureId,
+            })
+            .ToArrayAsync();
+        
+        var model = new GraphModel
+        {
+            Nodes = nodes,
+            Edges = edges
         };
 
         return Json(model);

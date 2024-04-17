@@ -3,17 +3,20 @@ using SpecBox.Domain.Model.Enums;
 
 namespace SpecBox.WebApi.Model.Project;
 
-public class FeatureDependencyModel
+public class NodeModel
 {
-    [Required] public string Code { get; set; } = null!;
+    [Required] public Guid Id { get; set; }
 
-    [Required] public string Title { get; set; } = null!;
+    public Guid? ParentId { get; set; }
 
+    public string? FeatureCode { get; set; } = null!;
+    
     public FeatureType? FeatureType { get; set; }
 
+    public string? Title { get; set; }
+
     [Required] public int TotalCount { get; set; }
-    
+
     [Required] public int AutomatedCount { get; set; }
-    
     [Required] public int ProblemCount { get; set; }
 }
