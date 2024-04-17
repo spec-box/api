@@ -9,8 +9,4 @@ public class FeatureDependency
     public Guid SourceFeatureId { get; set; }
     
     public Guid DependencyFeatureId { get; set; }
-    
-    public string SourceFeatureCode { get; set; }
-    
-    public string DependencyFeatureCode { get; set; }
 }

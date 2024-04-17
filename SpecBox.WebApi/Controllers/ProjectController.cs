@@ -36,18 +36,33 @@ public class ProjectController : Controller
 
     [HttpGet("{project}/features/{feature}")]
     [ProducesResponseType(typeof(FeatureModel), StatusCodes.Status200OK)]
-    public IActionResult Feature(string project, string feature)
+    public async Task<IActionResult> Feature(string project, string feature)
     {
         var f = db.Features
             .Include(f => f.AssertionGroups.OrderBy(g => g.SortOrder))
             .ThenInclude(g => g.Assertions.OrderBy(a => a.SortOrder))
             .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
 
-        var deps = db.FeatureDependencies.SingleOrDefault(d => d.SourceFeatureId == f.Id);
-        logger.LogInformation("Deps: {}", deps);
-        
         var model = mapper.Map<FeatureModel>(f);
-
+        var deps = await db.FeatureDependencies
+            .Where(d => d.SourceFeatureId == f.Id)
+            .Join(db.Features,
+                d => d.DependencyFeatureId,
+                f => f.Id,
+                (d, f) => new FeatureDependencyModel
+                {
+                    Code = f.Code,
+                    Title = f.Title,
+                    FeatureType = f.FeatureType,
+                    AssertionsCount = 0,
+                    AutomatedCount = 0,
+                }
+            )
+            .ToListAsync();
+        
+        // logger.LogInformation("Deps: {}", deps);
+        model.Dependencies = deps; 
+        
         return Json(model);
     }
 

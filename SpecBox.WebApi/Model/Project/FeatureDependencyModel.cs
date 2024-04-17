@@ -3,7 +3,7 @@ using SpecBox.Domain.Model.Enums;
 
 namespace SpecBox.WebApi.Model.Project;
 
-public class FeatureModel
+public class FeatureDependencyModel
 {
     [Required] public string Code { get; set; } = null!;
 
@@ -11,10 +11,7 @@ public class FeatureModel
 
     public FeatureType? FeatureType { get; set; }
 
-    public string? Description { get; set; }
-
-    public string? FilePath { get; set; }
-    public List<FeatureDependencyModel>? Dependencies { get; set; } = new();
-
-    [Required] public List<AssertionGroupModel> AssertionGroups { get; } = new();
+    public int AssertionsCount { get; set; }
+    
+    public int AutomatedCount { get; set; }
 }
