@@ -18,6 +18,8 @@ public class Feature
     public Guid ProjectId { get; set; }
     public Project Project { get; set; } = null!;
 
+    public List<FeatureDependency> Dependencies { get; } = new();
+
     public List<AttributeValue> Attributes { get; } = new();
 
     public List<AssertionGroup> AssertionGroups { get; } = new();

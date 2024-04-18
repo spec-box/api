@@ -6,7 +6,7 @@ using ForeignKeyConstraint = ThinkingHome.Migrator.Framework.ForeignKeyConstrain
 namespace SpecBox.Migrations;
 
 [Migration(16)]
-public class Migration_0016_ExportDependencies : Migration
+public class Migration_016_ExportDependencies : Migration
 {
     public override void Apply()
     {

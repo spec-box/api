@@ -18,6 +18,8 @@ public class SpecBoxDbContext : DbContext
 
     public DbSet<Feature> Features { get; set; } = null!;
 
+    public DbSet<FeatureDependency> FeatureDependencies { get; set; } = null!;
+
     public DbSet<AssertionGroup> AssertionGroups { get; set; } = null!;
 
     public DbSet<Assertion> Assertions { get; set; } = null!;
@@ -79,5 +81,11 @@ public class SpecBoxDbContext : DbContext
                 x => x.HasOne<AttributeValue>().WithMany().HasForeignKey(x => x.AttributeValueId),
                 x => x.HasOne<Feature>().WithMany().HasForeignKey(x => x.FeatureId)
             );
+
+        modelBuilder.Entity<Feature>()
+            .HasMany(g => g.Dependencies)
+            .WithOne(d => d.DependencyFeature)
+            .IsRequired()
+            .HasForeignKey(d => d.DependencyFeatureId);
     }
 }
