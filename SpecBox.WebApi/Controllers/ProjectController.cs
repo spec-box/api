@@ -45,25 +45,21 @@ public class ProjectController : Controller
 
         var model = mapper.Map<FeatureModel>(f);
 
-        var ds = db.FeatureDependencies
+        model.Dependencies = db.FeatureDependencies
             .Where(d => d.SourceFeatureId == f.Id)
-            .Include(t => t.DependencyFeature)
-            .Include(t => t.SourceFeature)
-            .ToList();
-
-        model.Dependencies = ds.Select(d => new FeatureDependencyModel
-        {
-            Code = d.DependencyFeature.Code,
-            Title = d.DependencyFeature.Title,
-            FeatureType = d.DependencyFeature.FeatureType,
-            TotalCount = d.DependencyFeature.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-            AutomatedCount = d.DependencyFeature.AssertionGroups
-                .SelectMany(gr => gr.Assertions)
-                .Count(a => a.AutomationState == AutomationState.Automated),
-            ProblemCount = d.DependencyFeature.AssertionGroups
-                .SelectMany(gr => gr.Assertions)
-                .Count(a => a.AutomationState == AutomationState.Problem),
-        }).ToList();
+            .Select(t => t.DependencyFeature)
+            .Select(d => new FeatureDependencyModel {
+                Code = d.Code,
+                Title = d.Title,
+                FeatureType = d.FeatureType,
+                TotalCount = d.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
+                AutomatedCount = d.AssertionGroups
+                    .SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Automated),
+                ProblemCount = d.AssertionGroups
+                    .SelectMany(gr => gr.Assertions)
+                    .Count(a => a.AutomationState == AutomationState.Problem),
+            }).ToList();
         
         return Json(model);
     }
@@ -96,8 +92,7 @@ public class ProjectController : Controller
     {
         var nodes = await db.Features
             .Where(f => f.Project.Code == project)
-            .Select(f => new NodeModel()
-            {
+            .Select(f => new NodeModel {
                 Id = f.Id,
                 Title = f.Title,
                 FeatureCode = f.Code,
@@ -107,14 +102,12 @@ public class ProjectController : Controller
                     .Count(a => a.AutomationState == AutomationState.Automated),
                 ProblemCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
                     .Count(a => a.AutomationState == AutomationState.Problem),
-                
             })
             .ToArrayAsync();
         
         var edges = await db.FeatureDependencies
-            // TO DO filter by projectCode (add ProjectId to FeatureDependencies?)
-            .Select(fd => new EdgeModel()
-            {
+            .Where(f => f.SourceFeature.Project.Code == project)
+            .Select(fd => new EdgeModel {
                 SourceId = fd.SourceFeatureId,
                 TargetId = fd.DependencyFeatureId,
             })
