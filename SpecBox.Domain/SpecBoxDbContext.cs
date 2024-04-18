@@ -82,6 +82,10 @@ public class SpecBoxDbContext : DbContext
                 x => x.HasOne<Feature>().WithMany().HasForeignKey(x => x.FeatureId)
             );
 
-        modelBuilder.Entity<FeatureDependency>().HasNoKey();
+        modelBuilder.Entity<Feature>()
+            .HasMany(g => g.Dependencies)
+            .WithOne(d => d.DependencyFeature)
+            .IsRequired()
+            .HasForeignKey(d => d.DependencyFeatureId);
     }
 }

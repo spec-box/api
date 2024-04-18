@@ -47,19 +47,22 @@ public class ProjectController : Controller
 
         model.Dependencies = db.FeatureDependencies
             .Where(d => d.SourceFeatureId == f.Id)
+            .Include(t => t.DependencyFeature)
+            .ThenInclude(t => t.AssertionGroups)
+            .ThenInclude(t => t.Assertions)
             .Select(t => t.DependencyFeature)
             .Select(d => new FeatureDependencyModel {
-                Code = d.Code,
-                Title = d.Title,
-                FeatureType = d.FeatureType,
+            Code = d.Code,
+            Title = d.Title,
+            FeatureType = d.FeatureType,
                 TotalCount = d.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-                AutomatedCount = d.AssertionGroups
-                    .SelectMany(gr => gr.Assertions)
-                    .Count(a => a.AutomationState == AutomationState.Automated),
-                ProblemCount = d.AssertionGroups
-                    .SelectMany(gr => gr.Assertions)
-                    .Count(a => a.AutomationState == AutomationState.Problem),
-            }).ToList();
+            AutomatedCount = d.AssertionGroups
+                .SelectMany(gr => gr.Assertions)
+                .Count(a => a.AutomationState == AutomationState.Automated),
+            ProblemCount = d.AssertionGroups
+                .SelectMany(gr => gr.Assertions)
+                .Count(a => a.AutomationState == AutomationState.Problem),
+        }).ToList();
         
         return Json(model);
     }
