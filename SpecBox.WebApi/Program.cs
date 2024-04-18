@@ -37,6 +37,8 @@ builder.Logging
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UsePathBase(app.Configuration["pathBase"]);
 app.MapControllers();
 
