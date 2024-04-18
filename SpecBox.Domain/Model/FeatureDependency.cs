@@ -13,7 +13,7 @@ public class FeatureDependency
     
     public Guid DependencyFeatureId { get; set; }
 
-    public Feature SourceFeature { get; set; }
+    public Feature? SourceFeature { get; set; }
 
-    public Feature DependencyFeature { get; set; }
+    public Feature? DependencyFeature { get; set; }
 }

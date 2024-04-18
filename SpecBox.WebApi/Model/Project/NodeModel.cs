@@ -11,7 +11,7 @@ public class NodeModel
     
     public FeatureType? FeatureType { get; set; }
 
-    [Required] public string Title { get; set; }
+    [Required] public string Title { get; set; } = null!;
 
     [Required] public int TotalCount { get; set; }
 
