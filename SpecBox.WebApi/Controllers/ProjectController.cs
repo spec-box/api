@@ -71,7 +71,7 @@ public class ProjectController : Controller
     public async Task<IActionResult> Structure(string project, string treeCode)
     {
         var prj = await db.Projects.SingleAsync(p => p.Code == project);
-        var tree = await db.Trees.SingleOrDefaultAsync(t => t.ProjectId == prj.Id && t.Code == treeCode);
+        var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id && (treeCode == "" || t.Code == treeCode));
 
         var projectModel = mapper.Map<Project, ProjectModel>(prj);
 
@@ -94,12 +94,16 @@ public class ProjectController : Controller
     {
         var prj = await db.Projects.SingleAsync(p => p.Code == project);
         var trees = await  db.Trees.Where(t => t.ProjectId == prj.Id).ToArrayAsync();
+        var new_trees = trees.Select(tree => new TreeModel {
+            Code = tree.Code,
+            Title = tree.Title,
+        }).ToArray();
 
         var projectModel = mapper.Map<Project, ProjectModel>(prj);
         var model = new TreeGroupModel
         {
             Project = projectModel,
-            Trees = trees.Select(mapper.Map<Tree, TreeModel>).ToArray()
+            Trees = new_trees
         };
 
         return Json(model);

@@ -5,8 +5,7 @@ namespace SpecBox.WebApi.Model.Project;
 
 public class TreeModel
 {
-    [Required] public required string Code { get; set; }
-
-    [Required] public string? Title { get; set; }
+    public string Code { get; set; } = null!;
+    public string Title { get; set; } = null!;
 
 }
