@@ -67,7 +67,7 @@ BEGIN
     INSERT INTO tmp_dependency (sourceCode, sourceId, dependencyCode, dependencyId)
     SELECT d."SourceFeatureCode", fs."Id", d."DependencyFeatureCode", fd."Id"
     from public."ExportFeatureDependency" d
-             left outer join public."Feature" fs 
+             left outer join public."Feature" fs
                  on fs."Code" = d."SourceFeatureCode" AND fs."ProjectId" = currentProjectId
              left outer join public."Feature" fd
                  on fd."Code" = d."DependencyFeatureCode" AND fd."ProjectId" = currentProjectId
@@ -80,10 +80,10 @@ BEGIN
     WHEN NOT MATCHED THEN
         INSERT ("SourceFeatureId", "DependencyFeatureId")
         VALUES (t.sourceId, t.dependencyId);
-    
+
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'added dependencies: %', rowsCount;
-    
+
     -- ## ЭКСПОРТ ГРУПП
     -- создаем временную таблицу групп
     CREATE TEMPORARY TABLE tmp_group
@@ -126,13 +126,14 @@ BEGIN
         groupId     uuid    not null,
         title       varchar not null,
         description varchar,
+        detailsUrl varchar,
         sortOrder   integer,
         automationState integer not null
     ) ON COMMIT DROP;
 
     -- заполняем данными временную таблицу утверждений
-    INSERT INTO tmp_assertion (groupId, title, description, sortOrder, automationState)
-    SELECT gr."Id", ea."Title", ea."Description", ea."SortOrder", ea."AutomationState"
+    INSERT INTO tmp_assertion (groupId, title, description, detailsUrl, sortOrder, automationState)
+    SELECT gr."Id", ea."Title", ea."Description", ea."DetailsUrl", ea."SortOrder", ea."AutomationState"
     FROM public."ExportAssertion" ea
              JOIN public."AssertionGroup" gr ON gr."Title" = ea."GroupTitle"
              JOIN public."Feature" f
@@ -149,11 +150,12 @@ BEGIN
     WHEN MATCHED THEN
         UPDATE
         SET "Description" = t.description,
+            "DetailsUrl" = t.detailsUrl,
             "AutomationState" = t.automationState,
             "SortOrder" = t.sortOrder
     WHEN NOT MATCHED THEN
-        INSERT ("AssertionGroupId", "Title", "Description", "SortOrder", "AutomationState")
-        VALUES (t.groupId, t.title, t.description, t.sortOrder, t.automationState);
+        INSERT ("AssertionGroupId", "Title", "Description", "DetailsUrl", "SortOrder", "AutomationState")
+        VALUES (t.groupId, t.title, t.description, t.detailsUrl, t.sortOrder, t.automationState);
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'updated assertions: %', rowsCount;
