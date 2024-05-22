@@ -7,7 +7,7 @@ namespace SpecBox.Domain.BulkCopy;
 public class BulkWriterAssertion : BulkWriter
 {
     private const string COMMAND =
-        "COPY \"ExportAssertion\" (\"ExportId\", \"FeatureCode\",\"GroupTitle\",\"GroupSortOrder\",\"Title\",\"Description\",\"SortOrder\",\"AutomationState\") FROM STDIN (FORMAT BINARY)";
+        "COPY \"ExportAssertion\" (\"ExportId\", \"FeatureCode\",\"GroupTitle\",\"GroupSortOrder\",\"Title\",\"Description\",\"DetailsUrl\",\"SortOrder\",\"AutomationState\") FROM STDIN (FORMAT BINARY)";
 
     public BulkWriterAssertion(NpgsqlConnection connection) : base(COMMAND, connection)
     {
@@ -20,6 +20,7 @@ public class BulkWriterAssertion : BulkWriter
         int? groupSortOrder,
         string title,
         string? description,
+        string? detailsUrl,
         int? sortOrder,
         AutomationState automationState)
     {
@@ -30,6 +31,7 @@ public class BulkWriterAssertion : BulkWriter
         await WriteNullableInt32(groupSortOrder);
         await Writer.WriteAsync(title, NpgsqlDbType.Text);
         await Writer.WriteAsync(description, NpgsqlDbType.Text);
+        await Writer.WriteAsync(detailsUrl, NpgsqlDbType.Text);
         await WriteNullableInt32(sortOrder);
         await Writer.WriteAsync(Convert.ToInt32(automationState), NpgsqlDbType.Integer);
     }
