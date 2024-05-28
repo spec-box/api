@@ -240,6 +240,7 @@ public class ExportController : Controller
                             groupSortOrder,
                             assertion.Title,
                             assertion.Description,
+                            assertion.DetailsUrl,
                             assertionSortOrder,
                             GetAutomationState(assertion));
 
