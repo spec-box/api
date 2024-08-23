@@ -9,18 +9,10 @@ using SpecBox.WebApi.Model.Stat;
 namespace SpecBox.WebApi.Controllers;
 
 [ApiController, Route("stat")]
-public class StatController : Controller
+public class StatController(SpecBoxDbContext db, ILogger<StatController> logger, IMapper mapper)
+    : Controller
 {
-    private readonly SpecBoxDbContext db;
-    private readonly ILogger logger;
-    private readonly IMapper mapper;
-
-    public StatController(SpecBoxDbContext db, ILogger<StatController> logger, IMapper mapper)
-    {
-        this.db = db;
-        this.logger = logger;
-        this.mapper = mapper;
-    }
+    private readonly ILogger logger = logger;
 
     [HttpPost("upload-autotests")]
     public async Task<IActionResult> AutotestsStatUpload(

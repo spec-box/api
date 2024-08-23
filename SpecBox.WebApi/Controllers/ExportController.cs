@@ -10,16 +10,9 @@ using Attribute = SpecBox.Domain.Model.Attribute;
 namespace SpecBox.WebApi.Controllers;
 
 [ApiController, Route("export")]
-public class ExportController : Controller
+public class ExportController(SpecBoxDbContext db, ILogger<ExportController> logger) : Controller
 {
-    private readonly SpecBoxDbContext db;
-    private readonly ILogger logger;
-
-    public ExportController(SpecBoxDbContext db, ILogger<ExportController> logger)
-    {
-        this.db = db;
-        this.logger = logger;
-    }
+    private readonly ILogger logger = logger;
 
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromQuery(Name = "project")] string projectCode,
