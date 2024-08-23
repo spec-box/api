@@ -5,16 +5,10 @@ using SpecBox.WebApi.Model.Default;
 
 namespace SpecBox.WebApi.Controllers;
 
-public class DefaultController : Controller
+public class DefaultController(IConfiguration configuration, IOptions<JsonOptions> jsonOptions)
+    : Controller
 {
-    private IConfiguration configuration;
-    private JsonOptions jsonOptions;
-
-    public DefaultController(IConfiguration configuration, IOptions<JsonOptions> jsonOptions)
-    {
-        this.configuration = configuration;
-        this.jsonOptions = jsonOptions.Value;
-    }
+    private readonly JsonOptions jsonOptions = jsonOptions.Value;
 
     [HttpGet("ping"), ApiExplorerSettings(IgnoreApi = true)]
     public IActionResult Ping()

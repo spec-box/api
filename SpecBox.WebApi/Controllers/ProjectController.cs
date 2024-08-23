@@ -10,18 +10,10 @@ using SpecBox.WebApi.Model.Project;
 namespace SpecBox.WebApi.Controllers;
 
 [ApiController, Route("projects")]
-public class ProjectController : Controller
+public class ProjectController(SpecBoxDbContext db, ILogger<ProjectController> logger, IMapper mapper)
+    : Controller
 {
-    private readonly SpecBoxDbContext db;
-    private readonly ILogger logger;
-    private readonly IMapper mapper;
-
-    public ProjectController(SpecBoxDbContext db, ILogger<ProjectController> logger, IMapper mapper)
-    {
-        this.db = db;
-        this.logger = logger;
-        this.mapper = mapper;
-    }
+    private readonly ILogger logger = logger;
 
     [HttpGet("list")]
     [ProducesResponseType(typeof(ProjectModel[]), StatusCodes.Status200OK)]
@@ -41,7 +33,7 @@ public class ProjectController : Controller
         var f = db.Features
             .Include(f => f.AssertionGroups.OrderBy(g => g.SortOrder))
             .ThenInclude(g => g.Assertions.OrderBy(a => a.SortOrder))
-            .SingleOrDefault(f => f.Code == feature && f.Project.Code == project);
+            .Single(f => f.Code == feature && f.Project.Code == project);
 
         var model = mapper.Map<FeatureModel>(f);
         
