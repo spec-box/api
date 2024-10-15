@@ -11,6 +11,9 @@ RUN dotnet restore
 WORKDIR /app/SpecBox.WebApi
 RUN dotnet publish -c Release -o out
 
+WORKDIR /app/SpecBox.CLI
+RUN dotnet publish -c Release -o out
+
 # PREPARE RUNTIME
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
@@ -27,6 +30,7 @@ RUN ln -fs /usr/share/zoneinfo/Europe/Moscow /etc/localtime && dpkg-reconfigure 
 # prepare application
 WORKDIR /app
 COPY --from=build /app/SpecBox.WebApi/out ./
+COPY --from=build /app/SpecBox.CLI/out ./
 RUN rm -f appsettings.*.json
 
 EXPOSE 80
