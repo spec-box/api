@@ -12,7 +12,10 @@ public class ProjectListCommand(SpecBoxDbContext db) : Command
 
         if (projects.Any())
         {
-            var table = new Table();
+            var table = new Table
+            {
+                Border = TableBorder.Simple
+            };
 
             // Add some columns
             table.AddColumn("Code");
@@ -28,7 +31,7 @@ public class ProjectListCommand(SpecBoxDbContext db) : Command
         }
         else
         {
-            AnsiConsole.MarkupLine("[orange3]No projects found![/]");
+            AnsiConsole.MarkupLine("[orange3]No projects found[/]");
         }
 
         return 0;

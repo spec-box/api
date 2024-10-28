@@ -30,8 +30,8 @@ public class Program
             config.AddBranch("project", cfgProject =>
             {
                 cfgProject.AddCommand<ProjectListCommand>("list");
-                cfgProject.AddCommand<ProjectAddCommand>("add");
-                cfgProject.AddCommand<ProjectRemoveCommand>("remove");
+                cfgProject.AddCommand<ProjectCreateCommand>("create");
+                cfgProject.AddCommand<ProjectDeleteCommand>("delete");
             });
         });
 

@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace SpecBox.CLI.Commands;
 
-public class ProjectAddCommand(SpecBoxDbContext db) : Command<ProjectAddCommand.Settings>
+public class ProjectCreateCommand(SpecBoxDbContext db) : Command<ProjectCreateCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
@@ -41,13 +41,16 @@ public class ProjectAddCommand(SpecBoxDbContext db) : Command<ProjectAddCommand.
 
             db.Projects.Add(project);
             db.SaveChanges();
+            
             tran.Commit();
 
+            AnsiConsole.MarkupLine($"[green3]Project \"{args.Code}\" was created successfully[/]");
             return 0;
         }
-        finally
+        catch
         {
             tran.Rollback();
+            throw;
         }
     }
 }

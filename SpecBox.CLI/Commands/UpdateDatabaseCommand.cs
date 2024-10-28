@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpecBox.Migrations;
+using Spectre.Console;
 using Spectre.Console.Cli;
 using ThinkingHome.Migrator;
 using ThinkingHome.Migrator.Providers.PostgreSQL;
@@ -42,6 +43,7 @@ internal sealed class UpdateDatabaseCommand : Command
     public override int Execute([NotNull] CommandContext context)
     {
         ApplyMigrations();
+        AnsiConsole.MarkupLine("[green3]Database is up to date[/]");
         return 0;
     }
 }
