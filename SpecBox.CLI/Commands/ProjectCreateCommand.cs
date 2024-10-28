@@ -41,7 +41,7 @@ public class ProjectCreateCommand(SpecBoxDbContext db) : Command<ProjectCreateCo
 
             db.Projects.Add(project);
             db.SaveChanges();
-            
+
             tran.Commit();
 
             AnsiConsole.MarkupLine($"[green3]Project \"{args.Code}\" was created successfully[/]");

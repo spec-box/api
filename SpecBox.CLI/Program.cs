@@ -17,7 +17,7 @@ public class Program
             .Build();
 
         string? cstring = configuration.GetConnectionString("default");
-        
+
         var deps = new ServiceCollection();
         deps.AddNpgsql<SpecBoxDbContext>(cstring);
 

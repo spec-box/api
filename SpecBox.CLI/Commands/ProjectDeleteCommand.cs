@@ -60,7 +60,7 @@ public class ProjectDeleteCommand(SpecBoxDbContext db) : Command<ProjectDeleteCo
             db.SaveChanges();
 
             tran.Commit();
-            
+
             AnsiConsole.MarkupLine($"[green3]Project \"{code}\" was deleted successfully[/]");
             return 0;
         }
@@ -69,6 +69,5 @@ public class ProjectDeleteCommand(SpecBoxDbContext db) : Command<ProjectDeleteCo
             tran.Rollback();
             throw;
         }
-
     }
 }
