@@ -1,14 +1,12 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpecBox.Migrations;
-using Spectre.Console;
 using Spectre.Console.Cli;
 using ThinkingHome.Migrator;
 using ThinkingHome.Migrator.Providers.PostgreSQL;
 
-namespace SpecBox.CLI;
+namespace SpecBox.CLI.Commands;
 
 internal sealed class UpdateDatabaseCommand : Command
 {
