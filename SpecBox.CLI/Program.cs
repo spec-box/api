@@ -19,6 +19,7 @@ public class Program
         string? cstring = configuration.GetConnectionString("default");
 
         var deps = new ServiceCollection();
+        deps.AddSingleton(configuration);
         deps.AddNpgsql<SpecBoxDbContext>(cstring);
 
         var registrar = new TypeRegistrar(deps);

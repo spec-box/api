@@ -9,7 +9,7 @@ using ThinkingHome.Migrator.Providers.PostgreSQL;
 
 namespace SpecBox.CLI.Commands;
 
-internal sealed class UpdateDatabaseCommand : Command
+internal sealed class UpdateDatabaseCommand(IConfigurationRoot configuration) : Command
 {
     private static ILoggerFactory CreateLoggerFactory(bool verbose)
     {
@@ -23,12 +23,6 @@ internal sealed class UpdateDatabaseCommand : Command
     {
         using var loggerFactory = CreateLoggerFactory(false);
         var logger = loggerFactory.CreateLogger("migrate-database");
-
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", true)
-            .Build();
-
 
         string? cstring = configuration.GetConnectionString("default");
 
