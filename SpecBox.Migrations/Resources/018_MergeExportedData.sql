@@ -300,5 +300,19 @@ BEGIN
 
     GET DIAGNOSTICS rowsCount = ROW_COUNT;
     RAISE NOTICE 'deleted features: %', rowsCount;
+    
+    -- удаляем обработанные данные из временных таблиц
+    DELETE FROM public."ExportFeatureAttribute"
+    WHERE public."ExportFeatureAttribute"."ExportId" = exportId;
+    
+    DELETE FROM public."ExportFeatureDependency"
+    WHERE public."ExportFeatureDependency"."ExportId" = exportId;
+
+    DELETE FROM public."ExportAssertion"
+    WHERE public."ExportAssertion"."ExportId" = exportId;
+
+    DELETE FROM public."ExportFeature"
+    WHERE public."ExportFeature"."ExportId" = exportId;
+    
 END;
 $$;
