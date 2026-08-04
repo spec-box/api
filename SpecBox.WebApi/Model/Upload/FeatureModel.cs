@@ -17,7 +17,7 @@ public class FeatureModel
 
     [Required] public AssertionGroupModel[] Groups { get; set; } = null!;
 
-    public Dictionary<string, string[]>? Attributes { get; set; }
+    public Dictionary<string, string[]?>? Attributes { get; set; }
     
     public string[]? Dependencies { get; set; }
 }

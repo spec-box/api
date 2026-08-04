@@ -19,7 +19,7 @@ public class ProjectCreateCommand(SpecBoxDbContext db) : Command<ProjectCreateCo
         [CommandOption("-r|--repo <repoUrl>")] public string? RepositoryUrl { get; set; }
     }
 
-    public override int Execute(CommandContext context, Settings args)
+    protected override int Execute(CommandContext context, Settings args, CancellationToken cancellationToken)
     {
         using var tran = db.Database.BeginTransaction();
 

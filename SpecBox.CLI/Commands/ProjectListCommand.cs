@@ -6,7 +6,7 @@ namespace SpecBox.CLI.Commands;
 
 public class ProjectListCommand(SpecBoxDbContext db) : Command
 {
-    public override int Execute(CommandContext context)
+    protected override int Execute(CommandContext context, CancellationToken cancellationToken)
     {
         var projects = db.Projects.ToList();
 

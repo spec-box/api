@@ -34,7 +34,7 @@ internal sealed class UpdateDatabaseCommand(IConfigurationRoot configuration) : 
         migrator.Migrate();
     }
 
-    public override int Execute([NotNull] CommandContext context)
+    protected override int Execute([NotNull] CommandContext context, CancellationToken cancellationToken)
     {
         ApplyMigrations();
         AnsiConsole.MarkupLine("[green3]Database is up to date[/]");
