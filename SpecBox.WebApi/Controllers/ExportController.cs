@@ -256,6 +256,8 @@ public class ExportController(SpecBoxDbContext db, ILogger<ExportController> log
 
                 foreach (var attribute in feature.Attributes)
                 {
+                    if (attribute.Value == null) continue;
+
                     var attributeCode = attribute.Key;
 
                     foreach (var valueCode in attribute.Value)

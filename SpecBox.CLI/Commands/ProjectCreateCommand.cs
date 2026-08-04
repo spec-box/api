@@ -9,9 +9,9 @@ public class ProjectCreateCommand(SpecBoxDbContext db) : Command<ProjectCreateCo
 {
     public sealed class Settings : CommandSettings
     {
-        [CommandArgument(0, "<code>")] public string Code { get; set; }
+        [CommandArgument(0, "<code>")] public required string Code { get; set; }
 
-        [CommandArgument(1, "<title>")] public string Title { get; set; }
+        [CommandArgument(1, "<title>")] public required string Title { get; set; }
 
         [CommandOption("-d|--description <description>")]
         public string? Description { get; set; }
@@ -19,7 +19,7 @@ public class ProjectCreateCommand(SpecBoxDbContext db) : Command<ProjectCreateCo
         [CommandOption("-r|--repo <repoUrl>")] public string? RepositoryUrl { get; set; }
     }
 
-    public override int Execute(CommandContext context, Settings args)
+    protected override int Execute(CommandContext context, Settings args, CancellationToken cancellationToken)
     {
         using var tran = db.Database.BeginTransaction();
 

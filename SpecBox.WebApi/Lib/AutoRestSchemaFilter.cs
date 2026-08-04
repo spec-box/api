@@ -1,23 +1,26 @@
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using System.Text.Json.Nodes;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SpecBox.WebApi.Lib;
 
 public class AutoRestSchemaFilter : ISchemaFilter
 {
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         var type = context.Type;
-        if (type.IsEnum)
+        if (type.IsEnum && schema is OpenApiSchema concrete)
         {
-            schema.Extensions.Add(
+            concrete.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+            concrete.Extensions.Add(
                 "x-ms-enum",
-                new OpenApiObject
-                {
-                    ["name"] = new OpenApiString(type.Name),
-                    ["modelAsString"] = new OpenApiBoolean(false)
-                }
+                new JsonNodeExtension(
+                    new JsonObject
+                    {
+                        ["name"] = type.Name,
+                        ["modelAsString"] = false
+                    }
+                )
             );
         };
     }
