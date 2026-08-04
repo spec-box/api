@@ -9,7 +9,7 @@ public class ProjectDeleteCommand(SpecBoxDbContext db) : Command<ProjectDeleteCo
 {
     public sealed class Settings : CommandSettings
     {
-        [CommandArgument(0, "<code>")] public string Code { get; set; }
+        [CommandArgument(0, "<code>")] public required string Code { get; set; }
     }
 
     protected override int Execute(CommandContext context, Settings args, CancellationToken cancellationToken)
