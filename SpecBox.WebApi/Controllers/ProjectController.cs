@@ -1,6 +1,8 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using SpecBox.Domain;
 using SpecBox.Domain.Model;
 using SpecBox.Domain.Model.Enums;
@@ -61,16 +63,14 @@ public class ProjectController(SpecBoxDbContext db, ILogger<ProjectController> l
 
     [HttpGet("{project}/structure")]
     [ProducesResponseType(typeof(StructureModel), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Structure(string project)
+    public async Task<IActionResult> Structure(string project, [FromQuery] StructureFilterModel filter)
     {
         var prj = await db.Projects.SingleAsync(p => p.Code == project);
         var tree = await db.Trees.FirstOrDefaultAsync(t => t.ProjectId == prj.Id);
 
         var projectModel = mapper.Map<Project, ProjectModel>(prj);
 
-        var nodes = tree == null
-            ? await GetDefaultTreeModel(project)
-            : await GetTreeModel(tree);
+        var nodes = await GetTreeModel(prj.Id, tree?.Id, filter);
 
         var model = new StructureModel
         {
@@ -81,46 +81,29 @@ public class ProjectController(SpecBoxDbContext db, ILogger<ProjectController> l
         return Json(model);
     }
 
-    private async Task<TreeNodeModel[]> GetDefaultTreeModel(string projectCode)
+    // Фильтрация и сборка результата (совпавшие узлы + их предки, совпадение группы
+    // по названию распространяется на поддерево) выполняются функцией FilterTree в БД,
+    // см. SpecBox.Migrations/Resources/019_FilterTree.sql. Она же строит плоский список
+    // фич с подсчётом покрытия, когда у проекта нет настроенных деревьев (treeId = null).
+    private Task<TreeNodeModel[]> GetTreeModel(Guid projectId, Guid? treeId, StructureFilterModel filter)
     {
-        var nodes = await db.Features
-            .Where(f => f.Project.Code == projectCode)
-            .Select(f => new TreeNodeModel
-            {
-                Id = f.Id,
-                Title = f.Title,
-                FeatureCode = f.Code,
-                FeatureType = f.FeatureType,
-                TotalCount = f.AssertionGroups.SelectMany(gr => gr.Assertions).Count(),
-                AutomatedCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
-                    .Count(a => a.AutomationState == AutomationState.Automated),
-                ProblemCount = f.AssertionGroups.SelectMany(gr => gr.Assertions)
-                    .Count(a => a.AutomationState == AutomationState.Problem),
-                
-            })
+        var search = filter.Title is { Length: > 0 } title ? title : null;
+
+        return db.Database
+            .SqlQueryRaw<TreeNodeModel>(
+                """
+                SELECT
+                    "Id", "ParentId", "Title", "SortOrder", "FeatureCode", "FeatureType",
+                    "Amount" AS "TotalCount",
+                    "AmountAutomated" AS "AutomatedCount",
+                    "AmountProblem" AS "ProblemCount"
+                FROM "FilterTree"(@projectId, @treeId, @search, @featureType, @hasProblems)
+                """,
+                new NpgsqlParameter("projectId", NpgsqlDbType.Uuid) { Value = projectId },
+                new NpgsqlParameter("treeId", NpgsqlDbType.Uuid) { Value = (object?)treeId ?? DBNull.Value },
+                new NpgsqlParameter("search", NpgsqlDbType.Varchar) { Value = (object?)search ?? DBNull.Value },
+                new NpgsqlParameter("featureType", NpgsqlDbType.Integer) { Value = (object?)(int?)filter.FeatureType ?? DBNull.Value },
+                new NpgsqlParameter("hasProblems", NpgsqlDbType.Boolean) { Value = (object?)filter.HasProblems ?? DBNull.Value })
             .ToArrayAsync();
-
-        return nodes;
-    }
-
-    private async Task<TreeNodeModel[]> GetTreeModel(Tree tree)
-    {
-        var nodes = await db.TreeNodes
-            .Where(n => n.TreeId == tree.Id)
-            .Select(n => new TreeNodeModel
-            {
-                Id = n.Id,
-                ParentId = n.ParentId,
-                Title = n.Title,
-                TotalCount = n.Amount,
-                AutomatedCount = n.AmountAutomated,
-                ProblemCount = n.AmountProblem,
-                FeatureCode = n.Feature == null ? null : n.Feature.Code,
-                FeatureType = n.Feature == null ? null : n.Feature.FeatureType,
-                SortOrder = n.SortOrder,
-            })
-            .ToArrayAsync();
-
-        return nodes;
     }
 }
