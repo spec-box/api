@@ -93,7 +93,7 @@ public class ProjectController(SpecBoxDbContext db, ILogger<ProjectController> l
             .SqlQueryRaw<TreeNodeModel>(
                 """
                 SELECT
-                    "Id", "ParentId", "Title", "SortOrder", "FeatureCode", "FeatureType",
+                    "Id", "ParentId", "Title", "SortOrder", "FeatureCode", "FeatureType", "IsExpanded",
                     "Amount" AS "TotalCount",
                     "AmountAutomated" AS "AutomatedCount",
                     "AmountProblem" AS "ProblemCount"

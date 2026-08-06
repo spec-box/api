@@ -21,4 +21,10 @@ public class TreeNodeModel
     [Required] public int ProblemCount { get; set; }
 
     public int? SortOrder { get; set; }
+
+    /// <summary>
+    /// Узел нужно показать раскрытым, чтобы были видны совпадения с фильтром.
+    /// Заполняется только при активных фильтрах.
+    /// </summary>
+    public bool? IsExpanded { get; set; }
 }
